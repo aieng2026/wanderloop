@@ -38,20 +38,29 @@ export async function POST(req: Request) {
   };
 
   try {
-    const { url } = await put(
-      `itineraries/${id}.json`,
-      JSON.stringify(payload),
-      {
-        access: "public",
-        addRandomSuffix: false,
-        contentType: "application/json",
-      },
+    const body = JSON.stringify(payload);
+    console.log(
+      `[itinerary/save] id=${id} bytes=${body.length} prompt=${parsed.prompt.slice(0, 60)}`,
     );
 
+    const { url } = await put(`itineraries/${id}.json`, body, {
+      access: "public",
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      contentType: "application/json",
+    });
+
+    console.log(`[itinerary/save] ok id=${id} url=${url}`);
     return Response.json({ id, url, path: `/itinerary/${id}` });
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error(`[itinerary/save] FAIL id=${id} ${message}`, stack);
     return Response.json(
-      { error: "Save failed", details: String(err) },
+      {
+        error: "Save failed",
+        details: message,
+      },
       { status: 500 },
     );
   }
