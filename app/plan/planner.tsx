@@ -5,14 +5,16 @@ import { DefaultChatTransport } from "ai";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import ToolCallCard from "@/components/tool-call-card";
+import ItineraryDisplay from "@/components/itinerary-display";
 
 export default function Planner({ initialPrompt }: { initialPrompt: string }) {
-  const [input, setInput] = useState(initialPrompt);
+  const [input, setInput] = useState("");
   const [hasAutoSent, setHasAutoSent] = useState(false);
 
-  const { messages, sendMessage, status, error } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
-  });
+  const { messages, sendMessage, status, error, stop, regenerate, setMessages } =
+    useChat({
+      transport: new DefaultChatTransport({ api: "/api/chat" }),
+    });
 
   useEffect(() => {
     if (initialPrompt && !hasAutoSent) {
@@ -29,21 +31,44 @@ export default function Planner({ initialPrompt }: { initialPrompt: string }) {
   };
 
   const isStreaming = status === "submitted" || status === "streaming";
+  const hasAssistantReply = messages.some((m) => m.role === "assistant");
+  const isErrored = status === "error";
+  const canRegenerate = !isStreaming && hasAssistantReply;
+
+  const resetConversation = () => {
+    setMessages([]);
+    setHasAutoSent(true); // prevent the initialPrompt effect from re-firing
+    setInput("");
+  };
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col px-6 py-10">
       <header className="mb-8 flex items-center justify-between">
-        <Link href="/" className="text-sm text-neutral-500 hover:text-neutral-300">
+        <Link
+          href="/"
+          className="text-sm text-neutral-500 hover:text-neutral-300"
+        >
           ← Wanderloop
         </Link>
-        <span className="text-xs text-neutral-600">Powered by AI SDK + Anthropic</span>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={resetConversation}
+            disabled={isStreaming || messages.length === 0}
+            className="text-xs text-neutral-500 hover:text-neutral-300 disabled:opacity-30 disabled:hover:text-neutral-500"
+          >
+            New trip
+          </button>
+          <span className="text-xs text-neutral-700">·</span>
+          <span className="text-xs text-neutral-600">
+            Powered by AI SDK + Anthropic
+          </span>
+        </div>
       </header>
 
       <div className="flex-1 space-y-6">
         {messages.length === 0 && !isStreaming && (
-          <p className="text-neutral-500">
-            Type a trip below to get started.
-          </p>
+          <p className="text-neutral-500">Type a trip below to get started.</p>
         )}
 
         {messages.map((msg) => (
@@ -61,14 +86,7 @@ export default function Planner({ initialPrompt }: { initialPrompt: string }) {
               <div className="space-y-3">
                 {msg.parts.map((part, i) => {
                   if (part.type === "text") {
-                    return (
-                      <div
-                        key={i}
-                        className="rounded-lg border border-neutral-800 bg-neutral-950 px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap text-neutral-100"
-                      >
-                        {part.text}
-                      </div>
-                    );
+                    return <ItineraryDisplay key={i} text={part.text} />;
                   }
                   if (
                     typeof part.type === "string" &&
@@ -84,15 +102,37 @@ export default function Planner({ initialPrompt }: { initialPrompt: string }) {
         ))}
 
         {isStreaming && (
-          <div className="text-xs text-neutral-500">
-            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-400 mr-2" />
-            Agent working…
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center text-neutral-500">
+              <span className="mr-2 inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+              Agent working…
+            </div>
+            <button
+              type="button"
+              onClick={() => stop()}
+              className="rounded-md border border-neutral-700 px-3 py-1 text-neutral-400 hover:border-neutral-500 hover:text-neutral-200"
+            >
+              Stop
+            </button>
           </div>
         )}
 
         {error && (
           <div className="rounded-lg border border-red-900 bg-red-950 px-4 py-3 text-sm text-red-300">
-            Error: {error.message}
+            <div className="font-medium">Error</div>
+            <div className="mt-1 text-red-400">{error.message}</div>
+          </div>
+        )}
+
+        {(canRegenerate || isErrored) && (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => regenerate()}
+              className="rounded-md border border-neutral-700 px-3 py-1.5 text-xs text-neutral-300 hover:border-neutral-500 hover:text-neutral-100"
+            >
+              ↻ Retry last response
+            </button>
           </div>
         )}
       </div>
@@ -102,7 +142,11 @@ export default function Planner({ initialPrompt }: { initialPrompt: string }) {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask a follow-up, or describe a new trip…"
+          placeholder={
+            messages.length === 0
+              ? "Describe a trip…"
+              : "Ask a follow-up…"
+          }
           className="flex-1 rounded-lg border border-neutral-700 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 placeholder-neutral-500 outline-none focus:border-neutral-400"
           disabled={isStreaming}
         />
