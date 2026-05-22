@@ -54,6 +54,16 @@ export default function Home() {
             4 days in Paris, relaxed, museums
           </a>
         </div>
+
+        <div className="pt-2 text-center text-xs text-neutral-600">
+          Want it to survive a tab close?{" "}
+          <a
+            href="/durable-plan"
+            className="text-purple-400 underline-offset-2 hover:text-purple-300 hover:underline"
+          >
+            Try durable mode →
+          </a>
+        </div>
       </div>
     </main>
   );
