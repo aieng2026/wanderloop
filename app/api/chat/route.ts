@@ -7,7 +7,7 @@ import { findAttractions } from "@/lib/tools/find-attractions";
 
 export const maxDuration = 60;
 
-const SYSTEM_PROMPT = `You are Wanderloop, a senior travel concierge.
+const BASE_PROMPT = `You are Wanderloop, a senior travel concierge.
 
 When the user describes a trip, your job is to assemble a day-by-day itinerary by calling tools — not by inventing data. Always follow this loop:
 
@@ -21,15 +21,29 @@ When the user describes a trip, your job is to assemble a day-by-day itinerary b
 Rules:
 - Never invent restaurants, attractions, flights, or weather. Only use what tools returned.
 - If a tool returns thin data, mention the limitation rather than fabricating.
-- Final response: a structured itinerary in markdown with one heading per day.
+- Final response: a structured itinerary in markdown with one '## Day N — <title>' heading per day. Inside each day, use **Morning:** / **Afternoon:** / **Evening:** prefixes.
 - Keep tone direct and useful, not florid.`;
 
+function localeAddendum(country: string, currency: string, units: string) {
+  return `
+
+USER LOCALE:
+- Country: ${country}
+- Show prices in: ${currency}
+- Use ${units} units (${units === "metric" ? "km, °C" : "miles, °F"})
+When you see USD prices from the find_flights tool, convert mentally to ${currency} and present in the user's currency. Note distances in ${units} units when describing walkability.`;
+}
+
 export async function POST(req: Request) {
+  const country = req.headers.get("x-wanderloop-country") ?? "US";
+  const currency = req.headers.get("x-wanderloop-currency") ?? "USD";
+  const units = req.headers.get("x-wanderloop-units") ?? "imperial";
+
   const { messages } = await req.json();
 
   const result = streamText({
     model: anthropic("claude-sonnet-4-5"),
-    system: SYSTEM_PROMPT,
+    system: BASE_PROMPT + localeAddendum(country, currency, units),
     messages: await convertToModelMessages(messages),
     tools: {
       find_flights: findFlights,
