@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     );
 
     const { url } = await put(`itineraries/${id}.json`, body, {
-      access: "public",
+      access: "private",
       addRandomSuffix: false,
       allowOverwrite: true,
       contentType: "application/json",

@@ -1,4 +1,4 @@
-import { list } from "@vercel/blob";
+import { get } from "@vercel/blob";
 
 export type SavedItinerary = {
   id: string;
@@ -15,13 +15,17 @@ export async function loadItinerary(
   const sanitized = id.replace(/[^a-zA-Z0-9_-]/g, "");
   if (!sanitized) return null;
 
-  const { blobs } = await list({ prefix: `itineraries/${sanitized}.json` });
-  const blob = blobs.find((b) => b.pathname === `itineraries/${sanitized}.json`);
-  if (!blob) return null;
+  try {
+    const result = await get(`itineraries/${sanitized}.json`, {
+      access: "private",
+      useCache: false,
+    });
+    if (!result) return null;
 
-  const res = await fetch(blob.url, { cache: "no-store" });
-  if (!res.ok) return null;
-
-  const data = (await res.json()) as SavedItinerary;
-  return data;
+    const text = await new Response(result.stream).text();
+    return JSON.parse(text) as SavedItinerary;
+  } catch (err) {
+    console.error(`[loadItinerary] FAIL id=${sanitized}`, err);
+    return null;
+  }
 }
