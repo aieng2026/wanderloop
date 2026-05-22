@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import ToolCallCard from "@/components/tool-call-card";
 import ItineraryDisplay from "@/components/itinerary-display";
+import BudgetFilter from "@/components/budget-filter";
+import { extractPlacesFromMessages } from "@/lib/extract-places";
 
 type SaveState =
   | { kind: "idle" }
@@ -232,6 +234,10 @@ export default function Planner({
               </div>
             )}
           </div>
+        )}
+
+        {canRegenerate && (
+          <BudgetFilter places={extractPlacesFromMessages(messages)} />
         )}
 
         {(canRegenerate || isErrored) && (
