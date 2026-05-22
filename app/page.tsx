@@ -15,31 +15,45 @@ export default function Home() {
           </p>
         </div>
 
-        <form className="flex flex-col gap-3 sm:flex-row">
+        <form action="/plan" method="get" className="flex flex-col gap-3 sm:flex-row">
           <input
             type="text"
-            name="prompt"
+            name="q"
             placeholder="5 days in Lisbon, foodie, mid-budget…"
+            defaultValue=""
+            required
             className="flex-1 rounded-lg border border-neutral-700 bg-neutral-900 px-4 py-3 text-base text-neutral-100 placeholder-neutral-500 outline-none focus:border-neutral-400"
-            disabled
             aria-label="Describe your trip"
           />
           <button
             type="submit"
-            className="rounded-lg bg-neutral-100 px-6 py-3 text-base font-medium text-neutral-900 transition hover:bg-white disabled:opacity-40"
-            disabled
+            className="rounded-lg bg-neutral-100 px-6 py-3 text-base font-medium text-neutral-900 transition hover:bg-white"
           >
             Plan trip →
           </button>
         </form>
 
-        <p className="text-xs text-neutral-600">
-          Scaffold deployed. Phase D wires the AI agent. See{" "}
-          <code className="rounded bg-neutral-800 px-1.5 py-0.5">
-            DESIGN.md
-          </code>
-          .
-        </p>
+        <div className="flex flex-wrap justify-center gap-2 text-xs text-neutral-500">
+          <span>Try:</span>
+          <a
+            href="/plan?q=5+days+in+Lisbon%2C+foodie%2C+mid-budget"
+            className="rounded-full border border-neutral-800 px-3 py-1 hover:border-neutral-600 hover:text-neutral-300"
+          >
+            5 days in Lisbon, foodie, mid-budget
+          </a>
+          <a
+            href="/plan?q=Long+weekend+in+Tokyo%2C+art+and+ramen"
+            className="rounded-full border border-neutral-800 px-3 py-1 hover:border-neutral-600 hover:text-neutral-300"
+          >
+            Long weekend in Tokyo, art + ramen
+          </a>
+          <a
+            href="/plan?q=4+days+in+Paris%2C+relaxed+pace%2C+museums"
+            className="rounded-full border border-neutral-800 px-3 py-1 hover:border-neutral-600 hover:text-neutral-300"
+          >
+            4 days in Paris, relaxed, museums
+          </a>
+        </div>
       </div>
     </main>
   );
