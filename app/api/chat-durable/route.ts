@@ -14,9 +14,12 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
   const modelMessages = await convertToModelMessages(messages);
 
+  const today = new Date().toISOString().slice(0, 10);
+
   const run = await start(planTripWorkflow, [
     modelMessages,
     { country, currency, units },
+    today,
   ]);
 
   return createUIMessageStreamResponse({

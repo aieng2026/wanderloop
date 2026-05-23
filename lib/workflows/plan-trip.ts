@@ -16,11 +16,15 @@ type LocaleHint = {
   units: "metric" | "imperial";
 };
 
-const BASE_PROMPT = `You are Wanderloop, a senior travel concierge running as a durable workflow.
+function buildBasePrompt(today: string): string {
+  return `You are Wanderloop, a senior travel concierge running as a durable workflow.
+
+CURRENT DATE: ${today}
+When the user doesn't specify trip dates, assume they want to travel 2–4 weeks from today. NEVER suggest dates in the past. Always anchor "next month" / "this weekend" / "next week" relative to ${today}.
 
 When the user describes a trip, your job is to assemble a day-by-day itinerary by calling tools — not by inventing data. Always follow this loop:
 
-1. Parse the user's intent: destination, length of stay, dates (assume next month if unspecified), preferences (food, pace, interests, budget).
+1. Parse the user's intent: destination, length of stay, dates (anchored to ${today} above), preferences (food, pace, interests, budget).
 2. Call check_weather first to ground the recommendations in conditions.
 3. Call find_flights with sensible defaults (origin "New York" unless told otherwise).
 4. Call find_restaurants with the cuisine / budget signal from the user.
@@ -32,6 +36,7 @@ Rules:
 - If a tool returns thin data, mention the limitation rather than fabricating.
 - Final response: a structured itinerary in markdown with one '## Day N — <title>' heading per day. Inside each day, use **Morning:** / **Afternoon:** / **Evening:** prefixes.
 - Keep tone direct and useful, not florid.`;
+}
 
 function localeAddendum(locale: LocaleHint): string {
   return `
@@ -118,12 +123,13 @@ async function runChatStep(
 export async function planTripWorkflow(
   messages: ModelMessage[],
   locale: LocaleHint,
+  today: string,
 ) {
   "use workflow";
 
   await runChatStep(
     messages,
-    BASE_PROMPT + localeAddendum(locale),
+    buildBasePrompt(today) + localeAddendum(locale),
     getWritable<UIMessageChunk>(),
   );
 }

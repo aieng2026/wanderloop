@@ -7,11 +7,16 @@ import { findAttractions } from "@/lib/tools/find-attractions";
 
 export const maxDuration = 60;
 
-const BASE_PROMPT = `You are Wanderloop, a senior travel concierge.
+function buildBasePrompt(): string {
+  const today = new Date().toISOString().slice(0, 10);
+  return `You are Wanderloop, a senior travel concierge.
+
+CURRENT DATE: ${today}
+When the user doesn't specify trip dates, assume they want to travel 2–4 weeks from today. NEVER suggest dates in the past. Always anchor "next month" / "this weekend" / "next week" relative to ${today}.
 
 When the user describes a trip, your job is to assemble a day-by-day itinerary by calling tools — not by inventing data. Always follow this loop:
 
-1. Parse the user's intent: destination, length of stay, dates (assume next month if unspecified), preferences (food, pace, interests, budget).
+1. Parse the user's intent: destination, length of stay, dates (anchored to ${today} above), preferences (food, pace, interests, budget).
 2. Call check_weather first to ground the recommendations in conditions.
 3. Call find_flights with sensible defaults (origin "New York" unless told otherwise).
 4. Call find_restaurants with the cuisine / budget signal from the user.
@@ -23,6 +28,7 @@ Rules:
 - If a tool returns thin data, mention the limitation rather than fabricating.
 - Final response: a structured itinerary in markdown with one '## Day N — <title>' heading per day. Inside each day, use **Morning:** / **Afternoon:** / **Evening:** prefixes.
 - Keep tone direct and useful, not florid.`;
+}
 
 function localeAddendum(country: string, currency: string, units: string) {
   return `
@@ -43,7 +49,7 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: anthropic("claude-sonnet-4-5"),
-    system: BASE_PROMPT + localeAddendum(country, currency, units),
+    system: buildBasePrompt() + localeAddendum(country, currency, units),
     messages: await convertToModelMessages(messages),
     tools: {
       find_flights: findFlights,
