@@ -55,32 +55,30 @@ export default async function ItineraryPage({
         </div>
       )}
 
-      <div className="mt-10 flex items-center justify-between text-xs text-neutral-600">
+      <div className="mt-10 flex flex-wrap items-center justify-between gap-3 text-xs text-neutral-600">
         <Link
           href="/"
           className="rounded-md border border-neutral-800 px-3 py-1.5 hover:border-neutral-600 hover:text-neutral-300"
         >
           ← Plan a new trip
         </Link>
-        <button
-          type="button"
-          onClick={undefined}
-          className="cursor-default text-neutral-700"
-          aria-hidden
-        />
-        <ShareButton id={id} />
+        <div className="flex gap-2">
+          <a
+            href={`/api/itinerary/${id}/pdf`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-md border border-neutral-800 px-3 py-1.5 hover:border-neutral-600 hover:text-neutral-300"
+          >
+            📄 Download PDF
+          </a>
+          <a
+            href={`/itinerary/${id}`}
+            className="rounded-md border border-neutral-800 px-3 py-1.5 hover:border-neutral-600 hover:text-neutral-300"
+          >
+            Share: /itinerary/{id}
+          </a>
+        </div>
       </div>
     </main>
-  );
-}
-
-function ShareButton({ id }: { id: string }) {
-  return (
-    <a
-      href={`/itinerary/${id}`}
-      className="rounded-md border border-neutral-800 px-3 py-1.5 hover:border-neutral-600 hover:text-neutral-300"
-    >
-      Share link: /itinerary/{id}
-    </a>
   );
 }

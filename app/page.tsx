@@ -1,26 +1,38 @@
+import DestinationGallery from "@/components/destination-gallery";
+
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-6 py-24">
-      <div className="w-full max-w-2xl space-y-10 text-center">
-        <div className="space-y-3">
-          <p className="text-sm font-medium tracking-wider text-neutral-500 uppercase">
-            Wanderloop
-          </p>
-          <h1 className="text-5xl font-semibold tracking-tight sm:text-6xl">
-            Plan a trip in seconds.
-          </h1>
-          <p className="text-lg text-neutral-400">
-            Type what you want. An AI agent builds the itinerary in real time —
-            flights, restaurants, weather, photos.
-          </p>
-        </div>
+    <main className="mx-auto flex min-h-screen max-w-6xl flex-col px-6 py-12 sm:py-20">
+      <header className="mb-12 flex items-center justify-between">
+        <span className="text-sm font-medium tracking-wider text-neutral-500 uppercase">
+          Wanderloop
+        </span>
+        <a
+          href="/durable-plan"
+          className="rounded-full border border-purple-800 px-3 py-1 text-xs text-purple-300 hover:border-purple-600 hover:text-purple-200"
+        >
+          Try durable mode →
+        </a>
+      </header>
 
-        <form action="/plan" method="get" className="flex flex-col gap-3 sm:flex-row">
+      <section className="mb-16 flex w-full max-w-3xl flex-col self-center text-center">
+        <h1 className="text-5xl font-semibold tracking-tight sm:text-6xl">
+          Plan a trip in seconds.
+        </h1>
+        <p className="mt-4 text-lg text-neutral-400">
+          Type what you want. An AI agent builds the itinerary in real time —
+          flights, restaurants, weather, and a day-by-day plan.
+        </p>
+
+        <form
+          action="/plan"
+          method="get"
+          className="mt-8 flex flex-col gap-3 sm:flex-row"
+        >
           <input
             type="text"
             name="q"
             placeholder="5 days in Lisbon, foodie, mid-budget…"
-            defaultValue=""
             required
             className="flex-1 rounded-lg border border-neutral-700 bg-neutral-900 px-4 py-3 text-base text-neutral-100 placeholder-neutral-500 outline-none focus:border-neutral-400"
             aria-label="Describe your trip"
@@ -32,39 +44,25 @@ export default function Home() {
             Plan trip →
           </button>
         </form>
+      </section>
 
-        <div className="flex flex-wrap justify-center gap-2 text-xs text-neutral-500">
-          <span>Try:</span>
+      <DestinationGallery />
+
+      <footer className="mt-20 flex flex-col items-center gap-2 text-xs text-neutral-600">
+        <div>
+          Built on Vercel — AI SDK · Workflow DevKit · Sandbox · Blob · Cron
+        </div>
+        <div className="flex gap-3 text-neutral-700">
           <a
-            href="/plan?q=5+days+in+Lisbon%2C+foodie%2C+mid-budget"
-            className="rounded-full border border-neutral-800 px-3 py-1 hover:border-neutral-600 hover:text-neutral-300"
+            href="https://github.com/aieng2026/super-vercel-demo"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-neutral-400"
           >
-            5 days in Lisbon, foodie, mid-budget
-          </a>
-          <a
-            href="/plan?q=Long+weekend+in+Tokyo%2C+art+and+ramen"
-            className="rounded-full border border-neutral-800 px-3 py-1 hover:border-neutral-600 hover:text-neutral-300"
-          >
-            Long weekend in Tokyo, art + ramen
-          </a>
-          <a
-            href="/plan?q=4+days+in+Paris%2C+relaxed+pace%2C+museums"
-            className="rounded-full border border-neutral-800 px-3 py-1 hover:border-neutral-600 hover:text-neutral-300"
-          >
-            4 days in Paris, relaxed, museums
+            GitHub →
           </a>
         </div>
-
-        <div className="pt-2 text-center text-xs text-neutral-600">
-          Want it to survive a tab close?{" "}
-          <a
-            href="/durable-plan"
-            className="text-purple-400 underline-offset-2 hover:text-purple-300 hover:underline"
-          >
-            Try durable mode →
-          </a>
-        </div>
-      </div>
+      </footer>
     </main>
   );
 }
