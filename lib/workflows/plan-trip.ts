@@ -9,6 +9,13 @@ import {
   findAttractionsStep,
 } from "./tools";
 
+// Direct Anthropic provider (bypasses Vercel AI Gateway).
+// Lazy import so the provider isn't constructed in the workflow VM at module load.
+async function getAnthropicModel() {
+  const { anthropic } = await import("@ai-sdk/anthropic");
+  return anthropic("claude-sonnet-4-5");
+}
+
 type LocaleHint = {
   country: string;
   currency: string;
@@ -49,7 +56,7 @@ export async function planTripWorkflow(
   "use workflow";
 
   const agent = new DurableAgent({
-    model: "anthropic/claude-sonnet-4-5",
+    model: getAnthropicModel,
     system: BASE_PROMPT + localeAddendum(locale),
     tools: {
       find_flights: {
