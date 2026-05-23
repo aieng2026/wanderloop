@@ -11,6 +11,22 @@ import { extractPlacesFromMessages } from "@/lib/extract-places";
 
 const RUN_ID_STORAGE_KEY = "wanderloop:active-durable-run-id";
 const MESSAGES_STORAGE_KEY = "wanderloop:durable-messages";
+const SAVED_AT_STORAGE_KEY = "wanderloop:durable-saved-at";
+const SESSION_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+function clearDurableSession() {
+  localStorage.removeItem(RUN_ID_STORAGE_KEY);
+  localStorage.removeItem(MESSAGES_STORAGE_KEY);
+  localStorage.removeItem(SAVED_AT_STORAGE_KEY);
+}
+
+function isStoredSessionExpired(): boolean {
+  const ts = localStorage.getItem(SAVED_AT_STORAGE_KEY);
+  if (!ts) return false; // legacy storage without timestamp — let it be
+  const savedAt = parseInt(ts, 10);
+  if (Number.isNaN(savedAt)) return true;
+  return Date.now() - savedAt > SESSION_TTL_MS;
+}
 
 export default function DurablePlanner({
   initialPrompt,
@@ -23,14 +39,13 @@ export default function DurablePlanner({
   const [hasAutoSent, setHasAutoSent] = useState(false);
   const [activeRunId, setActiveRunId] = useState<string | undefined>(undefined);
 
-  // Read the previous active runId on mount. If the URL has a fresh ?q=
-  // prompt, treat it as authoritative and clear stale resume state — this
-  // avoids trying to reconnect to dead runs from prior deployments.
+  // Read the previous active runId on mount. Clear stale state in two cases:
+  //   1. Fresh ?q= prompt — URL is authoritative
+  //   2. Stored session is older than SESSION_TTL_MS (2h) — likely a forgotten run
   const initialRunId = useMemo(() => {
     if (typeof window === "undefined") return undefined;
-    if (initialPrompt) {
-      localStorage.removeItem(RUN_ID_STORAGE_KEY);
-      localStorage.removeItem(MESSAGES_STORAGE_KEY);
+    if (initialPrompt || isStoredSessionExpired()) {
+      clearDurableSession();
       return undefined;
     }
     return localStorage.getItem(RUN_ID_STORAGE_KEY) ?? undefined;
@@ -41,7 +56,7 @@ export default function DurablePlanner({
   // The workflow stream then resumes any remaining chunks via WorkflowChatTransport.
   const initialMessages = useMemo(() => {
     if (typeof window === "undefined") return undefined;
-    if (initialPrompt) return undefined;
+    if (initialPrompt || isStoredSessionExpired()) return undefined;
     const raw = localStorage.getItem(MESSAGES_STORAGE_KEY);
     if (!raw) return undefined;
     try {
@@ -91,15 +106,18 @@ export default function DurablePlanner({
       transport,
     });
 
-  // Persist messages on every change so a refresh restores the conversation.
+  // Persist messages + timestamp on every change so a refresh restores the
+  // conversation AND so the TTL check can age out forgotten sessions.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (messages.length === 0) {
       localStorage.removeItem(MESSAGES_STORAGE_KEY);
+      localStorage.removeItem(SAVED_AT_STORAGE_KEY);
       return;
     }
     try {
       localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
+      localStorage.setItem(SAVED_AT_STORAGE_KEY, String(Date.now()));
     } catch {
       // localStorage full / disabled — fail silently
     }
@@ -134,8 +152,7 @@ export default function DurablePlanner({
     setHasAutoSent(true);
     setInput("");
     setActiveRunId(undefined);
-    localStorage.removeItem(RUN_ID_STORAGE_KEY);
-    localStorage.removeItem(MESSAGES_STORAGE_KEY);
+    clearDurableSession();
   };
 
   return (
@@ -245,6 +262,28 @@ export default function DurablePlanner({
 
         {canRegenerate && (
           <BudgetFilter places={extractPlacesFromMessages(messages)} />
+        )}
+
+        {canRegenerate && (
+          <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-medium text-neutral-100">
+                  Done with this trip?
+                </div>
+                <div className="mt-0.5 text-xs text-neutral-500">
+                  Start a fresh durable run — this conversation will be cleared.
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={resetConversation}
+                className="shrink-0 rounded-lg bg-purple-500 px-4 py-2 text-sm font-medium text-purple-950 transition hover:bg-purple-400"
+              >
+                Plan another trip →
+              </button>
+            </div>
+          </div>
         )}
 
         {(canRegenerate || isErrored) && (
