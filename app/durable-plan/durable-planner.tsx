@@ -22,11 +22,17 @@ export default function DurablePlanner({
   const [hasAutoSent, setHasAutoSent] = useState(false);
   const [activeRunId, setActiveRunId] = useState<string | undefined>(undefined);
 
-  // Read the previous active runId on mount (avoids SSR/hydration mismatch)
+  // Read the previous active runId on mount. If the URL has a fresh ?q=
+  // prompt, treat it as authoritative and clear stale resume state — this
+  // avoids trying to reconnect to dead runs from prior deployments.
   const initialRunId = useMemo(() => {
     if (typeof window === "undefined") return undefined;
+    if (initialPrompt) {
+      localStorage.removeItem(RUN_ID_STORAGE_KEY);
+      return undefined;
+    }
     return localStorage.getItem(RUN_ID_STORAGE_KEY) ?? undefined;
-  }, []);
+  }, [initialPrompt]);
 
   const transport = useMemo(
     () =>
