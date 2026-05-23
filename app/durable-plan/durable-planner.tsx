@@ -10,6 +10,7 @@ import BudgetFilter from "@/components/budget-filter";
 import { extractPlacesFromMessages } from "@/lib/extract-places";
 
 const RUN_ID_STORAGE_KEY = "wanderloop:active-durable-run-id";
+const MESSAGES_STORAGE_KEY = "wanderloop:durable-messages";
 
 export default function DurablePlanner({
   initialPrompt,
@@ -29,9 +30,26 @@ export default function DurablePlanner({
     if (typeof window === "undefined") return undefined;
     if (initialPrompt) {
       localStorage.removeItem(RUN_ID_STORAGE_KEY);
+      localStorage.removeItem(MESSAGES_STORAGE_KEY);
       return undefined;
     }
     return localStorage.getItem(RUN_ID_STORAGE_KEY) ?? undefined;
+  }, [initialPrompt]);
+
+  // Rehydrate the conversation from localStorage on refresh so the user's
+  // prompt + already-streamed assistant content is visible immediately.
+  // The workflow stream then resumes any remaining chunks via WorkflowChatTransport.
+  const initialMessages = useMemo(() => {
+    if (typeof window === "undefined") return undefined;
+    if (initialPrompt) return undefined;
+    const raw = localStorage.getItem(MESSAGES_STORAGE_KEY);
+    if (!raw) return undefined;
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : undefined;
+    } catch {
+      return undefined;
+    }
   }, [initialPrompt]);
 
   const transport = useMemo(
@@ -68,9 +86,24 @@ export default function DurablePlanner({
 
   const { messages, sendMessage, status, error, stop, regenerate, setMessages } =
     useChat({
+      messages: initialMessages,
       resume: Boolean(initialRunId),
       transport,
     });
+
+  // Persist messages on every change so a refresh restores the conversation.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (messages.length === 0) {
+      localStorage.removeItem(MESSAGES_STORAGE_KEY);
+      return;
+    }
+    try {
+      localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
+    } catch {
+      // localStorage full / disabled — fail silently
+    }
+  }, [messages]);
 
   useEffect(() => {
     if (initialRunId) setActiveRunId(initialRunId);
@@ -102,6 +135,7 @@ export default function DurablePlanner({
     setInput("");
     setActiveRunId(undefined);
     localStorage.removeItem(RUN_ID_STORAGE_KEY);
+    localStorage.removeItem(MESSAGES_STORAGE_KEY);
   };
 
   return (
