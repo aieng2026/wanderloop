@@ -38,6 +38,20 @@ export default function DurablePlanner({
     () =>
       new WorkflowChatTransport({
         api: "/api/chat-durable",
+        // Public reconnectToStream (used by useChat({ resume: true }) on mount)
+        // falls back to the AI SDK chat-id if no workflowRunId is in scope —
+        // that produces 16-char ids that the workflow API rejects. Override
+        // the URL with the runId we stashed in localStorage.
+        prepareReconnectToStreamRequest: async (config) => {
+          const runId =
+            typeof window !== "undefined"
+              ? localStorage.getItem(RUN_ID_STORAGE_KEY)
+              : null;
+          return {
+            ...config,
+            api: runId ? `/api/chat-durable/${runId}/stream` : config.api,
+          };
+        },
         onChatSendMessage: (response) => {
           const runId = response.headers.get("x-workflow-run-id");
           if (runId) {
@@ -47,7 +61,6 @@ export default function DurablePlanner({
         },
         onChatEnd: () => {
           localStorage.removeItem(RUN_ID_STORAGE_KEY);
-          // Keep showing the runId for the demo, just stop resuming next mount
         },
       }),
     [],
