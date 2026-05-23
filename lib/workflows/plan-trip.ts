@@ -1,5 +1,6 @@
-import { DurableAgent } from "@workflow/ai/agent";
 import { getWritable } from "workflow";
+import { streamText, tool, stepCountIs } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import type { UIMessageChunk, ModelMessage } from "ai";
 import {
@@ -8,13 +9,6 @@ import {
   checkWeatherStep,
   findAttractionsStep,
 } from "./tools";
-
-// Direct Anthropic provider (bypasses Vercel AI Gateway).
-// Lazy import so the provider isn't constructed in the workflow VM at module load.
-async function getAnthropicModel() {
-  const { anthropic } = await import("@ai-sdk/anthropic");
-  return anthropic("claude-sonnet-4-5");
-}
 
 type LocaleHint = {
   country: string;
@@ -49,19 +43,21 @@ USER LOCALE:
 When you see USD prices from the find_flights tool, convert mentally to ${locale.currency} and present in the user's currency. Note distances in ${locale.units} units when describing walkability.`;
 }
 
-export async function planTripWorkflow(
+async function runChatStep(
   messages: ModelMessage[],
-  locale: LocaleHint,
+  system: string,
+  writable: WritableStream<UIMessageChunk>,
 ) {
-  "use workflow";
+  "use step";
 
-  const agent = new DurableAgent({
-    model: getAnthropicModel,
-    system: BASE_PROMPT + localeAddendum(locale),
+  const result = streamText({
+    model: anthropic("claude-sonnet-4-5"),
+    system,
+    messages,
     tools: {
-      find_flights: {
+      find_flights: tool({
         description:
-          "Find flight options between two cities. Returns 3 representative options across price tiers. Synthetic data for demo.",
+          "Find flight options between two cities. Returns 3 representative options across price tiers.",
         inputSchema: z.object({
           origin: z.string(),
           destination: z.string(),
@@ -69,8 +65,8 @@ export async function planTripWorkflow(
           returnDate: z.string().optional(),
         }),
         execute: findFlightsStep,
-      },
-      find_restaurants: {
+      }),
+      find_restaurants: tool({
         description:
           "Find restaurant recommendations for a city given preferences. Returns 4-6 picks across price tiers.",
         inputSchema: z.object({
@@ -79,8 +75,8 @@ export async function planTripWorkflow(
           priceLevel: z.enum(["budget", "mid", "high", "any"]).optional(),
         }),
         execute: findRestaurantsStep,
-      },
-      check_weather: {
+      }),
+      check_weather: tool({
         description:
           "Get a multi-day weather forecast for a city. Returns daily highs, lows, and conditions.",
         inputSchema: z.object({
@@ -89,25 +85,45 @@ export async function planTripWorkflow(
           days: z.number().int().min(1).max(14).optional(),
         }),
         execute: checkWeatherStep,
-      },
-      find_attractions: {
+      }),
+      find_attractions: tool({
         description:
-          "Find attractions, neighborhoods, viewpoints, and experiences in a city. Returns 5-8 curated picks.",
+          "Find attractions, neighborhoods, viewpoints, and experiences in a city.",
         inputSchema: z.object({
           city: z.string(),
           interests: z.string().optional(),
           pace: z.enum(["relaxed", "balanced", "packed"]).optional(),
         }),
         execute: findAttractionsStep,
-      },
+      }),
     },
+    stopWhen: stepCountIs(8),
   });
 
-  const result = await agent.stream({
+  const writer = writable.getWriter();
+  try {
+    for await (const chunk of result.toUIMessageStream()) {
+      await writer.write(chunk);
+    }
+  } finally {
+    writer.releaseLock();
+    try {
+      await writable.close();
+    } catch {
+      // already closed
+    }
+  }
+}
+
+export async function planTripWorkflow(
+  messages: ModelMessage[],
+  locale: LocaleHint,
+) {
+  "use workflow";
+
+  await runChatStep(
     messages,
-    writable: getWritable<UIMessageChunk>(),
-    maxSteps: 8,
-  });
-
-  return result.messages;
+    BASE_PROMPT + localeAddendum(locale),
+    getWritable<UIMessageChunk>(),
+  );
 }
