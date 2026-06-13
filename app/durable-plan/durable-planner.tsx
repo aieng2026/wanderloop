@@ -2,7 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { WorkflowChatTransport } from "@workflow/ai";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import ToolCallCard from "@/components/tool-call-card";
 import ItineraryDisplay from "@/components/itinerary-display";
@@ -134,6 +134,23 @@ export default function DurablePlanner({
       sendMessage({ text: initialPrompt });
     }
   }, [initialPrompt, hasAutoSent, initialRunId, sendMessage]);
+
+  // Stick to bottom while streaming, unless the user has scrolled up to read.
+  const stickToBottomRef = useRef(true);
+  useEffect(() => {
+    const onScroll = () => {
+      const dist =
+        document.documentElement.scrollHeight -
+        (window.scrollY + window.innerHeight);
+      stickToBottomRef.current = dist < 120;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  useEffect(() => {
+    if (!stickToBottomRef.current) return;
+    window.scrollTo({ top: document.documentElement.scrollHeight });
+  }, [messages]);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
