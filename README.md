@@ -18,13 +18,12 @@ An AI travel concierge — type a trip in plain English, watch an agent build th
 | **Cron Jobs** | `app/api/cron/daily-deals/route.ts` + `vercel.json` | Daily 06:00 UTC digest of matching deals |
 | **Routing Middleware (Proxy)** | `proxy.ts` | Geo → currency + units locale injection |
 | **Image Optimization** | `components/destination-gallery.tsx` | `next/image` with `remotePatterns` for the destination grid |
-| **PPR (Partial Prerendering)** | `app/page.tsx` | Static shell + dynamic prompt input |
 | **PDF generation** | `app/api/itinerary/[id]/pdf/route.ts` | `@react-pdf/renderer` → downloadable trip PDF |
 
 ## Routes
 
 ```
-/                          Landing page (PPR, destination gallery)
+/                          Landing page (static, destination gallery)
 /plan?q=...                Streaming planner (AI SDK + Functions)
 /durable-plan?q=...        Durable planner (Workflow DevKit)
 /itinerary/[id]            Saved itinerary (Server Component, reads Blob)
@@ -46,12 +45,14 @@ An AI travel concierge — type a trip in plain English, watch an agent build th
 pnpm install
 cp .env.example .env.local
 # Fill in:
-#   ANTHROPIC_API_KEY        (required — the agent uses claude-sonnet-4-5)
-#   BLOB_READ_WRITE_TOKEN    (optional — enables Save trip + Cron digest)
-#   CRON_SECRET              (optional — protects /api/cron/*)
-# For workflow durable mode locally:
+#   ADMIN_EMAIL / ADMIN_PASSWORD  (required — single-admin login gate)
+#   AUTH_SECRET                   (required — HMAC for session cookies; openssl rand -hex 32)
+#   AI_GATEWAY_API_KEY            (optional — local LLM calls; falls back to OIDC)
+#   BLOB_READ_WRITE_TOKEN         (optional — enables Save trip + Cron digest)
+#   CRON_SECRET                   (optional — protects /api/cron/*)
+# For LLM calls + workflow durable mode without an API key:
 vercel link
-vercel env pull .env.local    # gets VERCEL_OIDC_TOKEN
+vercel env pull .env.local    # gets VERCEL_OIDC_TOKEN (used by AI Gateway + Workflow)
 
 pnpm dev
 # open http://localhost:3000
@@ -59,9 +60,9 @@ pnpm dev
 
 ## Stack
 
-- **Next.js 16** (Turbopack, App Router) with PPR
+- **Next.js 16** (Turbopack, App Router)
 - **React 19** + **Tailwind 4**
-- **AI SDK 6** (`ai`, `@ai-sdk/anthropic`, `@ai-sdk/react`)
+- **AI SDK 6** (`ai`, `@ai-sdk/gateway`, `@ai-sdk/react`)
 - **Workflow DevKit 4** (`workflow`, `@workflow/ai`)
 - **@vercel/blob 2** · **@vercel/sandbox 2** · **@react-pdf/renderer 4**
 - **react-markdown** + **remark-gfm** for the day-by-day card rendering
