@@ -56,7 +56,7 @@ async function runChatStep(
   "use step";
 
   const result = streamText({
-    model: gateway("anthropic/claude-sonnet-4-5"),
+    model: gateway("anthropic/claude-haiku-4-5"),
     system,
     messages,
     tools: {

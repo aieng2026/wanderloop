@@ -48,7 +48,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const result = streamText({
-    model: gateway("anthropic/claude-sonnet-4-5"),
+    model: gateway("anthropic/claude-haiku-4-5"),
     system: buildBasePrompt() + localeAddendum(country, currency, units),
     messages: await convertToModelMessages(messages),
     tools: {
