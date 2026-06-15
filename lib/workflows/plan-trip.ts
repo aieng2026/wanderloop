@@ -1,6 +1,6 @@
 import { getWritable } from "workflow";
 import { streamText, tool, stepCountIs } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
+import { gateway } from "@ai-sdk/gateway";
 import { z } from "zod";
 import type { UIMessageChunk, ModelMessage } from "ai";
 import {
@@ -56,7 +56,7 @@ async function runChatStep(
   "use step";
 
   const result = streamText({
-    model: anthropic("claude-sonnet-4-5"),
+    model: gateway("anthropic/claude-sonnet-4-5"),
     system,
     messages,
     tools: {

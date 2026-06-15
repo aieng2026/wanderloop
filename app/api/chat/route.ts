@@ -1,4 +1,4 @@
-import { anthropic } from "@ai-sdk/anthropic";
+import { gateway } from "@ai-sdk/gateway";
 import { convertToModelMessages, stepCountIs, streamText } from "ai";
 import { findFlights } from "@/lib/tools/find-flights";
 import { findRestaurants } from "@/lib/tools/find-restaurants";
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const result = streamText({
-    model: anthropic("claude-sonnet-4-5"),
+    model: gateway("anthropic/claude-sonnet-4-5"),
     system: buildBasePrompt() + localeAddendum(country, currency, units),
     messages: await convertToModelMessages(messages),
     tools: {

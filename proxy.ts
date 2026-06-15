@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { COOKIE_NAME, verifySession } from "@/lib/auth";
 
 const EU_COUNTRIES = new Set([
   "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR",
@@ -27,7 +28,40 @@ function inferLocale(country: string | null): {
   return { country: cc, currency, units };
 }
 
-export function proxy(req: NextRequest) {
+// Paths anyone may hit without a session cookie.
+// Cron routes are excluded because they enforce their own CRON_SECRET bearer check.
+// /itinerary/<id> and /api/itinerary/<id>/pdf are share links that must stay public.
+const PUBLIC_PREFIXES = [
+  "/login",
+  "/api/login",
+  "/api/logout",
+  "/itinerary/",
+  "/api/cron/",
+];
+const PDF_PATTERN = /^\/api\/itinerary\/[^/]+\/pdf$/;
+
+function isPublicPath(pathname: string): boolean {
+  if (pathname === "/") return true;
+  if (PDF_PATTERN.test(pathname)) return true;
+  return PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
+}
+
+export async function proxy(req: NextRequest) {
+  const { pathname, search } = req.nextUrl;
+
+  if (!isPublicPath(pathname)) {
+    const session = await verifySession(req.cookies.get(COOKIE_NAME)?.value);
+    if (!session) {
+      if (pathname.startsWith("/api/")) {
+        return new NextResponse("Unauthorized", { status: 401 });
+      }
+      const url = req.nextUrl.clone();
+      url.pathname = "/login";
+      url.search = `?next=${encodeURIComponent(pathname + search)}`;
+      return NextResponse.redirect(url);
+    }
+  }
+
   const country =
     req.headers.get("x-vercel-ip-country") ??
     req.cookies.get("wanderloop-geo-override")?.value ??
