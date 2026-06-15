@@ -34,9 +34,7 @@ export async function POST(req: Request) {
   }
 
   const token = await signSession(email.toLowerCase());
-  const url = new URL(req.url);
-  url.pathname = next;
-  url.search = "";
+  const url = new URL(next, req.url);
   const res = NextResponse.redirect(url, 303);
   res.cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
