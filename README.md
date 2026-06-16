@@ -19,6 +19,7 @@ An AI travel concierge — type a trip in plain English, watch an agent build th
 | **Routing Middleware (Proxy)** | `proxy.ts` | Geo → currency + units locale injection |
 | **Image Optimization** | `components/destination-gallery.tsx` | `next/image` with `remotePatterns` for the destination grid |
 | **PDF generation** | `app/api/itinerary/[id]/pdf/route.ts` | `@react-pdf/renderer` → downloadable trip PDF |
+| **Hallucination eval** | `evals/hallucination-regression.ts` | 10-prompt regression check tied to the system-prompt invariant (`pnpm eval`) |
 
 ## Routes
 
@@ -56,6 +57,9 @@ vercel env pull .env.local    # gets VERCEL_OIDC_TOKEN (used by AI Gateway + Wor
 
 pnpm dev
 # open http://localhost:3000
+
+# Run the hallucination regression eval (free-tier Gateway rate-limits; top up credits or use ANTHROPIC_API_KEY for full runs):
+pnpm eval
 ```
 
 ## Stack
