@@ -1,0 +1,42 @@
+[
+  {
+    "id": "single-day-popular",
+    "text": "One day in Paris, I love art and pastries."
+  },
+  {
+    "id": "multi-day-popular",
+    "text": "Five days in Tokyo for ramen and Studio Ghibli vibes."
+  },
+  {
+    "id": "weekend-popular",
+    "text": "Long weekend in Lisbon, food and design."
+  },
+  {
+    "id": "popular-with-pace",
+    "text": "Three days in Rome, packed itinerary, classical history focus."
+  },
+  {
+    "id": "dietary-prefs",
+    "text": "Four days in Barcelona, vegetarian-friendly restaurants, mid-range budget."
+  },
+  {
+    "id": "budget-constraint",
+    "text": "Three days in Bangkok on a tight budget, street food and temples."
+  },
+  {
+    "id": "very-short",
+    "text": "I have a 36-hour layover in Singapore. Make it count."
+  },
+  {
+    "id": "very-long",
+    "text": "Two-week relaxed trip through Iceland for landscape photography."
+  },
+  {
+    "id": "ambiguous-destination",
+    "text": "I want a long weekend somewhere warm with art galleries and good coffee, surprise me."
+  },
+  {
+    "id": "multi-city",
+    "text": "Five days split between Berlin and Prague, history and beer."
+  }
+]
