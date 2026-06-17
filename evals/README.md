@@ -15,16 +15,17 @@ For each test prompt, the eval runs the same `streamText` pipeline as production
 
 Any place mentioned in the response that doesn't trace back to a tool result is a hallucination.
 
-## Hard-fail vs soft-warn
+## Outcomes per prompt
 
-| Check | Severity | Why |
+| Outcome | Severity | Why |
 |---|---|---|
-| Hallucination (place not in tool output) | **Hard** (non-zero exit) | The stated system-prompt invariant |
+| `FAIL` — hallucination (place not in corpus) | **Hard** (exit 1) | The stated system-prompt invariant |
+| `SKIP` — model didn't call any tools | Soft (warn) | Non-itinerary turn (clarification or offline response). The invariant only applies when the model claims to ground in tools. Surfaces a real model-behavior signal (e.g. Haiku 4.5 prefers clarification on ambiguous prompts). |
 | `## Day N` markdown structure missing | Soft (warn) | Structure rule, not a data-correctness rule |
 | Past dates in the response | Soft (warn) | Date-anchoring rule from `CURRENT DATE:` injection |
 | `check_weather` not called | Soft (warn) | Documented tool-call order from the system prompt |
 
-The eval exits `0` if all hallucination checks pass, `1` if any fail, `2` if env/setup issues prevent the run.
+The eval exits `0` if all hallucination checks pass (including SKIP outcomes), `1` if any FAIL, `2` if env/setup issues prevent the run.
 
 ## How to run
 
