@@ -2,9 +2,7 @@
 
 An AI travel concierge — type a trip in plain English, watch an agent build the itinerary in real time. Built as a Vercel platform showcase: streaming AI agent + durable workflow runtime + sandboxed user code + image-heavy UI + shareable PDFs, all in one Next.js 16 app.
 
-> **Live demo:** [wanderloop-fers-projects-73df9ff5.vercel.app](https://wanderloop-fers-projects-73df9ff5.vercel.app)
-> **Design doc:** [`DESIGN.md`](./DESIGN.md) — full architectural sketch + ~25 interview Q&A
-> **Interview prep:** [`INTERVIEW_PREP.md`](./INTERVIEW_PREP.md) — rehearsal source-of-truth with real bug stories
+> **Live demo:** [wanderloop-five.vercel.app](https://wanderloop-five.vercel.app)
 
 ## What it shows
 
@@ -86,12 +84,10 @@ pnpm eval
 ## Known limitations (honest)
 
 - Tool data is **synthetic** (Lisbon, Tokyo, Paris have curated mocks; other cities get a generic fallback). Real-API integration would replace `lib/tools/*.ts` and `lib/workflows/tools.ts`.
-- Durable mode loses **per-tool-call checkpointing** vs DurableAgent — the whole agent loop is one step boundary (see `INTERVIEW_PREP.md` B2 for the story behind that decision).
+- Durable mode loses **per-tool-call checkpointing** vs DurableAgent — the whole agent loop is one step boundary.
 - Single hardcoded admin login (env-var creds, HMAC-signed cookie) — saved itineraries at `/itinerary/<id>` stay publicly readable by design so share links work.
 - LLM calls route through Vercel AI Gateway for unified observability and provider swaps.
 
 ## Repo
 
-[github.com/aieng2026/super-vercel-demo](https://github.com/aieng2026/super-vercel-demo)
-
-Built ~6 evenings, May 2026. ~10¢ per planned trip in real LLM cost.
+[github.com/aieng2026/wanderloop](https://github.com/aieng2026/wanderloop)

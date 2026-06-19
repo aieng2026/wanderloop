@@ -54,7 +54,7 @@ export default function Home() {
         </div>
         <div className="flex gap-3 text-neutral-700">
           <a
-            href="https://github.com/aieng2026/super-vercel-demo"
+            href="https://github.com/aieng2026/wanderloop"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-neutral-400"
