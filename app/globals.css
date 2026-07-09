@@ -46,11 +46,11 @@ body {
 }
 .chaos-pip {
   opacity: 0;
-  animation: chaos-pip-in 380ms ease-out forwards;
+  animation: chaos-pip-in 550ms ease-out forwards;
 }
 @media (prefers-reduced-motion: reduce) {
   .chaos-pip {
     animation-name: chaos-pip-fade;
-    animation-duration: 300ms;
+    animation-duration: 450ms;
   }
 }

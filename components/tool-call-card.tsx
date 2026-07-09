@@ -19,7 +19,7 @@ function readChaos(output: unknown): ChaosMeta | null {
   return null;
 }
 
-const PIP_STAGGER_MS = 800; // slow enough to watch each retry appear
+const PIP_STAGGER_MS = 1200; // slow enough to watch each retry appear
 
 // Retry timeline. The server ran the four tools' retries in parallel and
 // reported the final attempt count; the pips reveal one at a time — ✗ per
