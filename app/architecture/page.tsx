@@ -20,7 +20,7 @@ const MAPPING_ROWS: {
     own: "Scaling policy, container images, deploy pipeline",
   },
   {
-    feature: "Model access (GLM-5.2 today)",
+    feature: "Model access (Haiku 4.5 today)",
     vercel: "AI Gateway — one key, model string in code",
     aws: "LiteLLM proxy on ECS + Secrets Manager + custom metering",
     own: "Proxy uptime, key rotation, failover, usage tracking",
@@ -350,12 +350,13 @@ export default function ArchitecturePage() {
           the abstraction would add latency and machinery for no benefit.
           DurableAgent earns its place exactly where a run is long-lived enough
           to be worth resuming — knowing where <em>not</em> to use the shiny
-          abstraction is half the architecture. The same judgment applies to
-          model routing: the two paths run different models on purpose. The
-          durable path uses a non-reasoning model (Haiku 4.5) because a
-          reasoning model&apos;s thinking phase reads as a stall in a
-          checkpointed stream, while the interactive path can afford GLM-5.2 —
-          and the AI Gateway makes each choice a one-line string.
+          abstraction is half the architecture. Model choice got the same
+          scrutiny: both paths run Haiku 4.5 today. I trialed a reasoning model
+          (GLM-5.2) on the interactive path, but its thinking phase reads as a
+          stall in the checkpointed durable stream — which renders only text and
+          tool parts — so I consolidated on one model for consistent behavior
+          and simpler operations. The AI Gateway makes that a one-line string,
+          which is the point: model selection stays a decision, not a migration.
         </p>
 
         {/* ---- Closing ---- */}
