@@ -10,6 +10,8 @@ import {
   findAttractionsStep,
 } from "./tools";
 import { buildSystemPrompt, type LocaleHint } from "@/lib/system-prompt";
+import { PRIMARY_MODEL, gatewayResilience } from "@/lib/models";
+import { logRunCost } from "@/lib/cost";
 
 export async function planTripWorkflow(
   messages: ModelMessage[],
@@ -21,7 +23,8 @@ export async function planTripWorkflow(
   // Non-reasoning model on purpose: the durable UI renders only text and
   // tool parts, so a reasoning model's thinking phase looks like a stall.
   const agent = new DurableAgent({
-    model: "anthropic/claude-haiku-4-5",
+    model: PRIMARY_MODEL,
+    providerOptions: gatewayResilience,
     instructions: buildSystemPrompt({ today, locale, runtime: "durable" }),
     tools: {
       find_flights: tool({
@@ -72,5 +75,8 @@ export async function planTripWorkflow(
     messages,
     writable: getWritable<UIMessageChunk>(),
     stopWhen: stepCountIs(8),
+    // Per-step OTel spans (latency, tokens) — see instrumentation.ts.
+    experimental_telemetry: { isEnabled: true, functionId: "chat-durable" },
+    onFinish: ({ totalUsage }) => logRunCost("durable", PRIMARY_MODEL, totalUsage),
   });
 }

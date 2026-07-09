@@ -5,6 +5,8 @@ import { findRestaurants } from "@/lib/tools/find-restaurants";
 import { checkWeather } from "@/lib/tools/check-weather";
 import { findAttractions } from "@/lib/tools/find-attractions";
 import { buildSystemPrompt, type LocaleHint } from "@/lib/system-prompt";
+import { PRIMARY_MODEL, gatewayResilience } from "@/lib/models";
+import { logRunCost } from "@/lib/cost";
 
 export const maxDuration = 60;
 
@@ -19,7 +21,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const result = streamText({
-    model: gateway("anthropic/claude-haiku-4-5"),
+    model: gateway(PRIMARY_MODEL),
     system: buildSystemPrompt({ today, locale }),
     messages: await convertToModelMessages(messages),
     tools: {
@@ -28,7 +30,12 @@ export async function POST(req: Request) {
       check_weather: checkWeather,
       find_attractions: findAttractions,
     },
+    // Gateway degradation chain: fall back across providers on primary failure.
+    providerOptions: gatewayResilience,
+    // Emit OTel spans per model + tool call (latency, tokens) — see instrumentation.ts.
+    experimental_telemetry: { isEnabled: true, functionId: "chat-fast" },
     stopWhen: stepCountIs(8),
+    onFinish: ({ usage }) => logRunCost("fast", PRIMARY_MODEL, usage),
   });
 
   return result.toUIMessageStreamResponse();

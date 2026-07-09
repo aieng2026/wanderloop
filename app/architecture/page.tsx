@@ -364,16 +364,14 @@ export default function ArchitecturePage() {
           5. Where I&apos;d take it next
         </h2>
         <p>
-          The repo already ships a lightweight hallucination-regression eval
-          (10 prompts asserting every place the model names traces back to a
-          tool output — it&apos;s in{" "}
-          <code className="text-neutral-200">evals/</code>). Next steps in
-          order: wire that eval into CI so model or prompt changes can&apos;t
-          regress silently; add tracing on the Gateway path for per-run token
-          economics; and let the AI Gateway&apos;s fallback routing earn its
-          keep by defining an explicit degradation chain. All three are
-          afternoon-sized on this platform — which is, in the end, the whole
-          argument.
+          The repo ships a lightweight hallucination-regression eval (10 prompts
+          asserting every place the model names traces back to a tool output —
+          it&apos;s in <code className="text-neutral-200">evals/</code>). In the
+          first draft this section listed three next steps; since then I shipped
+          all three — the eval now gates CI, both paths emit OTel spans plus a
+          per-run cost line, and the Gateway runs an explicit fallback chain.
+          They were afternoon-sized on this platform, which is, in the end, the
+          whole argument. See the operational section below.
         </p>
         <p>
           One cleanup the DurableAgent refactor didn&apos;t finish: the tools
@@ -388,6 +386,52 @@ export default function ArchitecturePage() {
           place. Worth naming because it&apos;s the honest boundary of what the
           abstraction bought: it collapsed the orchestration, not the tool
           surface.
+        </p>
+
+        {/* ---- Operational excellence ---- */}
+        <h2 className="pt-4 text-2xl font-semibold tracking-tight text-neutral-100">
+          6. Operational excellence — the parts that don&apos;t demo but do page you
+        </h2>
+        <p>
+          A Well-Architected writeup shouldn&apos;t stop at the happy path. Here
+          is how the same platform primitives cover the operational pillars —
+          each one is config or a few lines, not a service I stand up and run.
+          The full breakdown, with RPO/RTO and what&apos;s still on the backlog,
+          is in{" "}
+          <code className="text-neutral-200">OPERATIONAL_ROADMAP.md</code>.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[560px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-neutral-700 text-left text-xs tracking-wider text-neutral-500 uppercase">
+                <th className="py-2 pr-3 font-medium">Pillar</th>
+                <th className="py-2 pr-3 font-medium text-neutral-300">What I shipped</th>
+                <th className="py-2 font-medium">Primitive</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ["Reliability", "Gateway model fallback chain (Haiku → GLM-5.2 → GPT-5.5) so a provider outage fails over, not down", "AI Gateway"],
+                ["Reliability", "Chaos fault injection into durable steps; the runtime's step retries recover with no user-visible failure", "Workflow DevKit"],
+                ["Operations", "Per-model + per-tool OTel spans; a structured per-run cost line (~$0.005/trip)", "@vercel/otel + AI SDK telemetry"],
+                ["Ops Excellence", "Eval-in-CI gate — a prompt/model change that regresses grounding can't merge", "GitHub Actions"],
+              ].map(([pillar, what, prim]) => (
+                <tr key={what} className="border-b border-neutral-800/70 align-top">
+                  <td className="py-2.5 pr-3 font-medium text-neutral-200">{pillar}</td>
+                  <td className="py-2.5 pr-3 text-neutral-300">{what}</td>
+                  <td className="py-2.5 text-neutral-500">{prim}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p>
+          The chaos one is my favorite because it&apos;s testable in front of
+          you: set <code className="text-neutral-200">WANDERLOOP_CHAOS=1</code>,
+          plan a trip, and watch tool steps take synthetic failures and recover
+          — a fault-injection experiment where I wrote the fault, and the
+          platform wrote the recovery. That division of labor is the whole point
+          of the right side of the diagram.
         </p>
 
         <footer className="border-t border-neutral-800 pt-6 text-sm text-neutral-500">

@@ -3,6 +3,7 @@
 // so each call is checkpointed by the Workflow runtime (auto-retry, replay).
 
 import type { Flight, Restaurant, Attraction, WeatherDay } from "@/lib/types";
+import { maybeInjectChaos } from "./chaos";
 
 // ---------- find_flights ----------
 
@@ -13,6 +14,7 @@ export async function findFlightsStep(input: {
   returnDate?: string;
 }) {
   "use step";
+  maybeInjectChaos("find_flights");
 
   const { origin, destination, departDate } = input;
   const baseHours = pickBaseHours(destination);
@@ -86,6 +88,7 @@ export async function findRestaurantsStep(input: {
   priceLevel?: "budget" | "mid" | "high" | "any";
 }) {
   "use step";
+  maybeInjectChaos("find_restaurants");
 
   const { city, cuisine, priceLevel } = input;
   const all = RESTAURANT_DATA[city.toLowerCase()] ?? RESTAURANT_DATA.default;
@@ -138,6 +141,7 @@ export async function checkWeatherStep(input: {
   days?: number;
 }) {
   "use step";
+  maybeInjectChaos("check_weather");
 
   const { city, startDate } = input;
   const days = input.days ?? 5;
@@ -182,6 +186,7 @@ export async function findAttractionsStep(input: {
   pace?: "relaxed" | "balanced" | "packed";
 }) {
   "use step";
+  maybeInjectChaos("find_attractions");
 
   const all = ATTRACTION_DATA[input.city.toLowerCase()] ?? ATTRACTION_DATA.default;
   return {

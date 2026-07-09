@@ -1,0 +1,43 @@
+name: eval
+
+# Runs the hallucination-regression eval as a CI gate on PRs that touch the
+# agent's behavior surface (system prompt, tools, workflows, chat route) — so a
+# prompt or model change can't silently regress grounding. Build always runs;
+# the eval runs when the AI_GATEWAY_API_KEY secret is present, otherwise it
+# skips with a warning so the check stays green until the secret is added.
+
+on:
+  pull_request:
+    paths:
+      - "lib/system-prompt.ts"
+      - "lib/tools/**"
+      - "lib/workflows/**"
+      - "app/api/chat/**"
+      - "evals/**"
+      - "package.json"
+  workflow_dispatch:
+
+jobs:
+  hallucination-eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build
+        run: pnpm build
+      - name: Hallucination regression eval
+        env:
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+        run: |
+          if [ -z "$AI_GATEWAY_API_KEY" ]; then
+            echo "::warning::AI_GATEWAY_API_KEY not set — skipping the hallucination eval gate. Add the repo secret to enable it."
+            exit 0
+          fi
+          pnpm eval:ci
