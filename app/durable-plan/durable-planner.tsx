@@ -39,6 +39,21 @@ export default function DurablePlanner({
   const [hasAutoSent, setHasAutoSent] = useState(false);
   const [activeRunId, setActiveRunId] = useState<string | undefined>(undefined);
 
+  // Chaos toggle. Sets the `wanderloop-chaos` cookie the durable route reads at
+  // run start; the next planned trip injects synthetic tool-step failures that
+  // the Workflow runtime retries to completion — a live fault-injection demo.
+  const [chaos, setChaos] = useState(false);
+  useEffect(() => {
+    setChaos(/(?:^|;\s*)wanderloop-chaos=1(?:;|$)/.test(document.cookie));
+  }, []);
+  const toggleChaos = () => {
+    const next = !chaos;
+    setChaos(next);
+    document.cookie = next
+      ? "wanderloop-chaos=1; path=/; max-age=3600; samesite=lax"
+      : "wanderloop-chaos=; path=/; max-age=0; samesite=lax";
+  };
+
   // Read the previous active runId on mount. Clear stale state in two cases:
   //   1. Fresh ?q= prompt — URL is authoritative
   //   2. Stored session is older than SESSION_TTL_MS (2h) — likely a forgotten run
@@ -227,6 +242,19 @@ export default function DurablePlanner({
               · Workflow DevKit · resumes if you refresh, retries on failure
             </span>
           </div>
+          <button
+            type="button"
+            onClick={toggleChaos}
+            aria-pressed={chaos}
+            title="Inject synthetic tool-step failures; the Workflow runtime retries them to completion. Applies to the next planned trip."
+            className={`rounded-md border px-2 py-1 font-medium transition ${
+              chaos
+                ? "border-amber-600 bg-amber-950/60 text-amber-300"
+                : "border-neutral-700 text-neutral-400 hover:border-neutral-500 hover:text-neutral-200"
+            }`}
+          >
+            Chaos: {chaos ? "ON" : "OFF"}
+          </button>
           {activeRunId && (
             <code className="rounded bg-purple-950 px-2 py-0.5 font-mono text-[10px] text-purple-300">
               run: {activeRunId.slice(0, 16)}…

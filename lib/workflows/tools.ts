@@ -3,7 +3,7 @@
 // so each call is checkpointed by the Workflow runtime (auto-retry, replay).
 
 import type { Flight, Restaurant, Attraction, WeatherDay } from "@/lib/types";
-import { maybeInjectChaos } from "./chaos";
+import { maybeInjectChaos, type ChaosContext } from "./chaos";
 
 // ---------- find_flights ----------
 
@@ -12,9 +12,9 @@ export async function findFlightsStep(input: {
   destination: string;
   departDate: string;
   returnDate?: string;
-}) {
+}, ctx?: ChaosContext) {
   "use step";
-  maybeInjectChaos("find_flights");
+  maybeInjectChaos("find_flights", ctx);
 
   const { origin, destination, departDate } = input;
   const baseHours = pickBaseHours(destination);
@@ -86,9 +86,9 @@ export async function findRestaurantsStep(input: {
   city: string;
   cuisine?: string;
   priceLevel?: "budget" | "mid" | "high" | "any";
-}) {
+}, ctx?: ChaosContext) {
   "use step";
-  maybeInjectChaos("find_restaurants");
+  maybeInjectChaos("find_restaurants", ctx);
 
   const { city, cuisine, priceLevel } = input;
   const all = RESTAURANT_DATA[city.toLowerCase()] ?? RESTAURANT_DATA.default;
@@ -139,9 +139,9 @@ export async function checkWeatherStep(input: {
   city: string;
   startDate: string;
   days?: number;
-}) {
+}, ctx?: ChaosContext) {
   "use step";
-  maybeInjectChaos("check_weather");
+  maybeInjectChaos("check_weather", ctx);
 
   const { city, startDate } = input;
   const days = input.days ?? 5;
@@ -184,9 +184,9 @@ export async function findAttractionsStep(input: {
   city: string;
   interests?: string;
   pace?: "relaxed" | "balanced" | "packed";
-}) {
+}, ctx?: ChaosContext) {
   "use step";
-  maybeInjectChaos("find_attractions");
+  maybeInjectChaos("find_attractions", ctx);
 
   const all = ATTRACTION_DATA[input.city.toLowerCase()] ?? ATTRACTION_DATA.default;
   return {

@@ -12,13 +12,19 @@ import {
 import { buildSystemPrompt, type LocaleHint } from "@/lib/system-prompt";
 import { PRIMARY_MODEL, gatewayResilience } from "@/lib/models";
 import { logRunCost } from "@/lib/cost";
+import type { ChaosContext } from "./chaos";
 
 export async function planTripWorkflow(
   messages: ModelMessage[],
   locale: LocaleHint,
   today: string,
+  chaos = false,
 ) {
   "use workflow";
+
+  // Chaos is threaded to each tool step via experimental_context so the
+  // website toggle controls fault injection per run, live, with no redeploy.
+  const chaosCtx: ChaosContext = { chaos };
 
   // Non-reasoning model on purpose: the durable UI renders only text and
   // tool parts, so a reasoning model's thinking phase looks like a stall.
@@ -36,7 +42,8 @@ export async function planTripWorkflow(
           departDate: z.string(),
           returnDate: z.string().optional(),
         }),
-        execute: findFlightsStep,
+        execute: (input, opts) =>
+          findFlightsStep(input, opts?.experimental_context as ChaosContext),
       }),
       find_restaurants: tool({
         description:
@@ -46,7 +53,8 @@ export async function planTripWorkflow(
           cuisine: z.string().optional(),
           priceLevel: z.enum(["budget", "mid", "high", "any"]).optional(),
         }),
-        execute: findRestaurantsStep,
+        execute: (input, opts) =>
+          findRestaurantsStep(input, opts?.experimental_context as ChaosContext),
       }),
       check_weather: tool({
         description:
@@ -56,7 +64,8 @@ export async function planTripWorkflow(
           startDate: z.string(),
           days: z.number().int().min(1).max(14).optional(),
         }),
-        execute: checkWeatherStep,
+        execute: (input, opts) =>
+          checkWeatherStep(input, opts?.experimental_context as ChaosContext),
       }),
       find_attractions: tool({
         description:
@@ -66,7 +75,8 @@ export async function planTripWorkflow(
           interests: z.string().optional(),
           pace: z.enum(["relaxed", "balanced", "packed"]).optional(),
         }),
-        execute: findAttractionsStep,
+        execute: (input, opts) =>
+          findAttractionsStep(input, opts?.experimental_context as ChaosContext),
       }),
     },
   });
@@ -75,6 +85,7 @@ export async function planTripWorkflow(
     messages,
     writable: getWritable<UIMessageChunk>(),
     stopWhen: stepCountIs(8),
+    experimental_context: chaosCtx,
     // Per-step OTel spans (latency, tokens) — see instrumentation.ts.
     experimental_telemetry: { isEnabled: true, functionId: "chat-durable" },
     onFinish: ({ totalUsage }) => logRunCost("durable", PRIMARY_MODEL, totalUsage),

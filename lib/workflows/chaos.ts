@@ -25,14 +25,29 @@ export function chaosFaultProbability(): number {
   return Number.isFinite(p) && p > 0 && p < 1 ? p : 0;
 }
 
+// Per-run chaos context, threaded from the request (UI toggle) into each step.
+export type ChaosContext = { chaos?: boolean };
+
+/**
+ * Whether chaos is armed for this step. A runtime flag (the website toggle,
+ * passed via ChaosContext) wins when present; otherwise fall back to the
+ * WANDERLOOP_CHAOS env var. So the demo can flip it live without a redeploy.
+ */
+export function chaosEnabled(ctx?: ChaosContext): boolean {
+  if (ctx && typeof ctx.chaos === "boolean") return ctx.chaos;
+  return chaosFaultProbability() > 0;
+}
+
 /**
  * Throw a synthetic transient fault with the configured probability.
  * Call at the top of a "use step" function; the Workflow runtime retries the
  * step on throw, so the run recovers automatically.
  */
-export function maybeInjectChaos(stepName: string): void {
-  const p = chaosFaultProbability();
-  if (p > 0 && Math.random() < p) {
+export function maybeInjectChaos(stepName: string, ctx?: ChaosContext): void {
+  if (!chaosEnabled(ctx)) return;
+  // When armed via the UI toggle (env unset), use a sensible default rate.
+  const p = chaosFaultProbability() || 0.5;
+  if (Math.random() < p) {
     console.warn(
       `[chaos] injected transient failure in "${stepName}" (p=${p}) — Workflow will retry the step`,
     );
