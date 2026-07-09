@@ -375,6 +375,20 @@ export default function ArchitecturePage() {
           afternoon-sized on this platform — which is, in the end, the whole
           argument.
         </p>
+        <p>
+          One cleanup the DurableAgent refactor didn&apos;t finish: the tools
+          are still defined in two places —{" "}
+          <code className="text-neutral-200">lib/tools/*</code> for the fast
+          path and the <code className="text-neutral-200">&quot;use step&quot;</code>{" "}
+          versions in <code className="text-neutral-200">lib/workflows/tools.ts</code>{" "}
+          for the durable one. DurableAgent simplified the agent{" "}
+          <em>loop</em>, not that duplication. The next move is a single tool
+          module both paths import — the durable path wrapping each with the
+          step directive — so a new tool or a schema change lands in exactly one
+          place. Worth naming because it&apos;s the honest boundary of what the
+          abstraction bought: it collapsed the orchestration, not the tool
+          surface.
+        </p>
 
         <footer className="border-t border-neutral-800 pt-6 text-sm text-neutral-500">
           <p>
