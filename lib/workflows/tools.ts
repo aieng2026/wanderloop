@@ -3,7 +3,7 @@
 // so each call is checkpointed by the Workflow runtime (auto-retry, replay).
 
 import type { Flight, Restaurant, Attraction, WeatherDay } from "@/lib/types";
-import { maybeInjectChaos, type ChaosContext } from "./chaos";
+import { runChaosDelay, type ChaosContext } from "./chaos";
 
 // ---------- find_flights ----------
 
@@ -14,7 +14,7 @@ export async function findFlightsStep(input: {
   returnDate?: string;
 }, ctx?: ChaosContext) {
   "use step";
-  maybeInjectChaos("find_flights", ctx);
+  const _chaos = await runChaosDelay("find_flights", ctx);
 
   const { origin, destination, departDate } = input;
   const baseHours = pickBaseHours(destination);
@@ -26,7 +26,7 @@ export async function findFlightsStep(input: {
     makeFlight(origin, destination, departDate, "16:45", baseHours + 4, basePrice - 120, "Delta + Air France", "DL+AF", 1),
   ];
 
-  return { flights };
+  return { flights, _chaos };
 }
 
 function makeFlight(
@@ -88,7 +88,7 @@ export async function findRestaurantsStep(input: {
   priceLevel?: "budget" | "mid" | "high" | "any";
 }, ctx?: ChaosContext) {
   "use step";
-  maybeInjectChaos("find_restaurants", ctx);
+  const _chaos = await runChaosDelay("find_restaurants", ctx);
 
   const { city, cuisine, priceLevel } = input;
   const all = RESTAURANT_DATA[city.toLowerCase()] ?? RESTAURANT_DATA.default;
@@ -96,7 +96,7 @@ export async function findRestaurantsStep(input: {
     priceLevel && priceLevel !== "any"
       ? all.filter((r) => matchPrice(r.priceLevel, priceLevel))
       : all;
-  return { restaurants: filtered, city, cuisineHint: cuisine ?? null };
+  return { restaurants: filtered, city, cuisineHint: cuisine ?? null, _chaos };
 }
 
 function matchPrice(level: 1 | 2 | 3 | 4, t: "budget" | "mid" | "high"): boolean {
@@ -141,7 +141,7 @@ export async function checkWeatherStep(input: {
   days?: number;
 }, ctx?: ChaosContext) {
   "use step";
-  maybeInjectChaos("check_weather", ctx);
+  const _chaos = await runChaosDelay("check_weather", ctx);
 
   const { city, startDate } = input;
   const days = input.days ?? 5;
@@ -158,7 +158,7 @@ export async function checkWeatherStep(input: {
       precipitationPct: profile.pattern[i % profile.pattern.length] === "rain" ? 70 : 10,
     };
   });
-  return { city, forecast };
+  return { city, forecast, _chaos };
 }
 
 function climateProfile(city: string): {
@@ -186,7 +186,7 @@ export async function findAttractionsStep(input: {
   pace?: "relaxed" | "balanced" | "packed";
 }, ctx?: ChaosContext) {
   "use step";
-  maybeInjectChaos("find_attractions", ctx);
+  const _chaos = await runChaosDelay("find_attractions", ctx);
 
   const all = ATTRACTION_DATA[input.city.toLowerCase()] ?? ATTRACTION_DATA.default;
   return {
@@ -194,6 +194,7 @@ export async function findAttractionsStep(input: {
     attractions: all,
     interestsHint: input.interests ?? null,
     pace: input.pace,
+    _chaos,
   };
 }
 

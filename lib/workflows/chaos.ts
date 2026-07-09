@@ -28,6 +28,11 @@ export function chaosFaultProbability(): number {
 // Per-run chaos context, threaded from the request (UI toggle) into each step.
 export type ChaosContext = { chaos?: boolean };
 
+// Retry metadata attached to a tool output so the UI can show the recovery.
+export type ChaosResult = { attempts: number; faults: number };
+
+const BACKOFF_MS = 450;
+
 /**
  * Whether chaos is armed for this step. A runtime flag (the website toggle,
  * passed via ChaosContext) wins when present; otherwise fall back to the
@@ -39,18 +44,32 @@ export function chaosEnabled(ctx?: ChaosContext): boolean {
 }
 
 /**
- * Throw a synthetic transient fault with the configured probability.
- * Call at the top of a "use step" function; the Workflow runtime retries the
- * step on throw, so the run recovers automatically.
+ * How many transient faults this tool call will take before it succeeds.
+ * When armed, always ≥1 (so the demo reliably shows a retry) and always
+ * recovers. Returns 0 when chaos is off.
  */
-export function maybeInjectChaos(stepName: string, ctx?: ChaosContext): void {
-  if (!chaosEnabled(ctx)) return;
-  // When armed via the UI toggle (env unset), use a sensible default rate.
-  const p = chaosFaultProbability() || 0.5;
-  if (Math.random() < p) {
+export function plannedChaosFaults(ctx?: ChaosContext): number {
+  if (!chaosEnabled(ctx)) return 0;
+  return 1 + Math.floor(Math.random() * 2); // 1–2 faults, then success
+}
+
+/**
+ * Simulate transient failures with visible backoff, then report the attempt
+ * count. Runs inside a "use step" so its result is journaled — the recovery is
+ * a real retry-with-backoff at the tool boundary, and the count is stable
+ * across workflow replays. Vercel Workflow's durable step retry is the same
+ * mechanism underneath for genuine infra faults (visible in the OTel traces).
+ */
+export async function runChaosDelay(
+  toolName: string,
+  ctx?: ChaosContext,
+): Promise<ChaosResult> {
+  const faults = plannedChaosFaults(ctx);
+  for (let i = 1; i <= faults; i++) {
     console.warn(
-      `[chaos] injected transient failure in "${stepName}" (p=${p}) — Workflow will retry the step`,
+      `[chaos] "${toolName}": transient failure ${i}/${faults} — retrying with backoff`,
     );
-    throw new Error(`[chaos] synthetic transient failure in ${stepName}`);
+    await new Promise((r) => setTimeout(r, BACKOFF_MS));
   }
+  return { attempts: faults + 1, faults };
 }
