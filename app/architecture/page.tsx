@@ -416,7 +416,7 @@ export default function ArchitecturePage() {
                 ["Operations", "Per-model + per-tool OTel spans; a structured per-run cost line (~$0.005/trip)", "@vercel/otel + AI SDK telemetry"],
                 ["Operations", "Public /api/health endpoint reporting serving region + deployment id — probeable by an uptime monitor", "Vercel Functions"],
                 ["Ops Excellence", "Eval-in-CI gate — a prompt/model change that regresses grounding can't merge", "GitHub Actions"],
-                ["Security", "Fail-open rate-limit guard on the LLM + sandbox routes (a limiter must never take down what it protects), enforced by an edge WAF rule", "Vercel Firewall"],
+                ["Security", "Live edge WAF rule (30 req/60s per IP) on the LLM routes, plus an in-route fail-open guard (a limiter must never take down what it protects)", "Vercel Firewall"],
                 ["Performance / Cost", "ISR-cached itinerary share pages — a per-request Blob read becomes an edge cache hit", "ISR + Vercel Blob"],
               ].map(([pillar, what, prim]) => (
                 <tr key={what} className="border-b border-neutral-800/70 align-top">

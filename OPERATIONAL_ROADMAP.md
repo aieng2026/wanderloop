@@ -61,10 +61,10 @@ concern it removes from my plate.
 | Shipped | How |
 |---|---|
 | **Auth + isolation** | HMAC-signed session cookie (`lib/auth.ts`); untrusted user code runs in a Vercel Sandbox microVM; cron enforces a `CRON_SECRET` bearer. |
-| **Rate limiting** | `lib/rate-limit.ts` — fail-open `@vercel/firewall` guard on `/api/chat`, `/api/chat-durable`, `/api/sandbox/budget` (the routes where abuse burns money). |
+| **Rate limiting** | Two layers, both live: an **edge WAF rule** ("Rate limit AI routes", 30 req/60s per IP on `/api/chat`, enforced before the function runs) plus an in-route `@vercel/firewall` fail-open guard (`lib/rate-limit.ts`) on `/api/chat`, `/api/chat-durable`, `/api/sandbox/budget` — the routes where abuse burns money. |
 | **Secrets discipline** | All secrets in env vars; nothing in the repo. |
 
-**Apply the edge rule** (the guard fails open until it exists):
+The edge rule was created with (kept here for reference / to re-apply):
 ```sh
 vercel firewall rules add "Rate limit AI routes" \
   --condition '{"type":"path","op":"pre","value":"/api/chat"}' \
@@ -85,7 +85,7 @@ vercel firewall rules add "Rate limit AI routes" \
 | OTel tracing + per-run cost | Ops / Cost | ✅ shipped |
 | Eval-in-CI gate | Ops Excellence | ✅ shipped |
 | `/api/health` endpoint | Ops / Monitoring | ✅ shipped |
-| Rate-limit guard on expensive routes | Security | ✅ shipped |
+| Rate limiting (edge WAF rule + in-route guard) | Security | ✅ shipped + live |
 | ISR-cached itinerary reads | Performance / Cost | ✅ shipped |
 | Multi-region `functionFailoverRegions` | Reliability | 🏢 Enterprise plan |
 | Secure Compute (VPC peering) | Infra / Security | 🏢 capability (config) |
