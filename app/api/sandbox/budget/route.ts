@@ -1,5 +1,6 @@
 import { Sandbox } from "@vercel/sandbox";
 import { z } from "zod";
+import { rateLimitGuard } from "@/lib/rate-limit";
 
 export const maxDuration = 30;
 
@@ -35,6 +36,9 @@ try {
 `;
 
 export async function POST(req: Request) {
+  const limited = await rateLimitGuard("wanderloop-sandbox", req);
+  if (limited) return limited;
+
   let parsed;
   try {
     const body = await req.json();

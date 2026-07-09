@@ -36,6 +36,7 @@ const PUBLIC_PREFIXES = [
   "/login",
   "/api/login",
   "/api/logout",
+  "/api/health",
   "/itinerary/",
   "/api/cron/",
   "/architecture",

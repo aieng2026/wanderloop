@@ -7,10 +7,14 @@ import { findAttractions } from "@/lib/tools/find-attractions";
 import { buildSystemPrompt, type LocaleHint } from "@/lib/system-prompt";
 import { PRIMARY_MODEL, gatewayResilience } from "@/lib/models";
 import { logRunCost } from "@/lib/cost";
+import { rateLimitGuard } from "@/lib/rate-limit";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
+  const limited = await rateLimitGuard("wanderloop-chat", req);
+  if (limited) return limited;
+
   const country = req.headers.get("x-wanderloop-country") ?? "US";
   const currency = req.headers.get("x-wanderloop-currency") ?? "USD";
   const units: LocaleHint["units"] =

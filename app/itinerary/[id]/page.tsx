@@ -3,6 +3,12 @@ import Link from "next/link";
 import { loadItinerary } from "@/lib/blob";
 import ItineraryDisplay from "@/components/itinerary-display";
 
+// ISR: saved itineraries are effectively immutable share links, so cache each
+// rendered page and its Blob read at the edge and revalidate hourly. Turns a
+// per-request Blob fetch into a cache hit — a real read-cost + latency win, the
+// same idea as an ElastiCache/CDN layer in front of object storage.
+export const revalidate = 3600;
+
 type UIPart = { type: string; text?: string };
 type UIMessage = { id?: string; role: string; parts: UIPart[] };
 

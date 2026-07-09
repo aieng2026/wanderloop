@@ -1,10 +1,14 @@
 import { convertToModelMessages, createUIMessageStreamResponse } from "ai";
 import { start } from "workflow/api";
 import { planTripWorkflow } from "@/lib/workflows/plan-trip";
+import { rateLimitGuard } from "@/lib/rate-limit";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
+  const limited = await rateLimitGuard("wanderloop-chat", req);
+  if (limited) return limited;
+
   const country = req.headers.get("x-wanderloop-country") ?? "US";
   const currency = req.headers.get("x-wanderloop-currency") ?? "USD";
   const units =

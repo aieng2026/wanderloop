@@ -414,7 +414,10 @@ export default function ArchitecturePage() {
                 ["Reliability", "Gateway model fallback chain (Haiku → GLM-5.2 → GPT-5.5) so a provider outage fails over, not down", "AI Gateway"],
                 ["Reliability", "Chaos fault injection into durable steps; the runtime's step retries recover with no user-visible failure", "Workflow DevKit"],
                 ["Operations", "Per-model + per-tool OTel spans; a structured per-run cost line (~$0.005/trip)", "@vercel/otel + AI SDK telemetry"],
+                ["Operations", "Public /api/health endpoint reporting serving region + deployment id — probeable by an uptime monitor", "Vercel Functions"],
                 ["Ops Excellence", "Eval-in-CI gate — a prompt/model change that regresses grounding can't merge", "GitHub Actions"],
+                ["Security", "Fail-open rate-limit guard on the LLM + sandbox routes (a limiter must never take down what it protects), enforced by an edge WAF rule", "Vercel Firewall"],
+                ["Performance / Cost", "ISR-cached itinerary share pages — a per-request Blob read becomes an edge cache hit", "ISR + Vercel Blob"],
               ].map(([pillar, what, prim]) => (
                 <tr key={what} className="border-b border-neutral-800/70 align-top">
                   <td className="py-2.5 pr-3 font-medium text-neutral-200">{pillar}</td>
@@ -427,11 +430,24 @@ export default function ArchitecturePage() {
         </div>
         <p>
           The chaos one is my favorite because it&apos;s testable in front of
-          you: set <code className="text-neutral-200">WANDERLOOP_CHAOS=1</code>,
-          plan a trip, and watch tool steps take synthetic failures and recover
-          — a fault-injection experiment where I wrote the fault, and the
-          platform wrote the recovery. That division of labor is the whole point
-          of the right side of the diagram.
+          you: flip the <strong>Chaos</strong> toggle on the durable planner,
+          plan a trip, and watch each tool card take synthetic failures and
+          recover on a live retry timeline — a fault-injection experiment where
+          I wrote the fault and the platform wrote the recovery. That division
+          of labor is the whole point of the right side of the diagram.
+        </p>
+        <p>
+          A few things I deliberately left as <em>capabilities to reach for</em>{" "}
+          rather than shipping into a demo: multi-region function failover
+          (<code className="text-neutral-200">functionFailoverRegions</code>,
+          Enterprise) for the DR story; <strong>Secure Compute</strong> (VPC
+          peering) for when a customer needs the app to reach a private backend;
+          rolling releases with skew protection for staged rollouts; and log
+          drains to ship the structured logs into Datadog or similar. The point
+          isn&apos;t that Wanderloop needs them — it&apos;s that each is platform
+          config I can turn on, not an operational program I have to build. The
+          full pillar-by-pillar breakdown, with RPO/RTO, lives in{" "}
+          <code className="text-neutral-200">OPERATIONAL_ROADMAP.md</code>.
         </p>
 
         <footer className="border-t border-neutral-800 pt-6 text-sm text-neutral-500">
