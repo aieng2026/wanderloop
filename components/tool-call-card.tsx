@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
 type ToolPart = {
   type: string;
   toolCallId?: string;
@@ -21,55 +19,41 @@ function readChaos(output: unknown): ChaosMeta | null {
   return null;
 }
 
-const STEP_MS = 800; // real time between revealed attempts, so it's watchable
+const PIP_STAGGER_MS = 800; // slow enough to watch each retry appear
 
-// Paced re-enactment of the retry sequence. The server ran the retries in
-// parallel (all four tools at once) and reported the final attempt count; here
-// we reveal each attempt one at a time — ✗ per fault, then ✓ — over real
-// seconds, so the recovery is something you can actually watch, not a flash.
+// Retry timeline. The server ran the four tools' retries in parallel and
+// reported the final attempt count; the pips reveal one at a time — ✗ per
+// injected fault, then ✓ for recovery — via CSS (staggered by inline delay,
+// fill-mode forwards so they stay visible). CSS, not React state, so streaming
+// re-renders can't stall or reset it.
 function ChaosTimeline({ chaos }: { chaos: ChaosMeta }) {
-  const attempts = chaos.attempts; // faults + 1 (last attempt succeeds)
-  const [shown, setShown] = useState(1);
-
-  useEffect(() => {
-    setShown(1);
-  }, [chaos.attempts, chaos.faults]);
-
-  useEffect(() => {
-    if (shown >= attempts) return;
-    const t = setTimeout(() => setShown((s) => s + 1), STEP_MS);
-    return () => clearTimeout(t);
-  }, [shown, attempts]);
-
-  const settled = shown >= attempts;
-
+  // [fault, fault, …, recovery]
+  const pips = [
+    ...Array.from({ length: chaos.faults }, () => false),
+    true,
+  ];
   return (
     <div className="mt-1.5 ml-4 flex flex-wrap items-center gap-1">
-      {Array.from({ length: shown }).map((_, i) => {
-        const success = i + 1 >= attempts; // last attempt is the recovery
-        return (
-          <span
-            key={i}
-            className={`chaos-pip inline-flex h-4 w-4 items-center justify-center rounded-sm border text-[9px] font-bold ${
-              success
-                ? "border-emerald-700/70 bg-emerald-950/60 text-emerald-400"
-                : "border-amber-700/70 bg-amber-950/60 text-amber-400"
-            }`}
-            title={success ? "Step recovered" : "Injected transient fault — retrying with backoff"}
-          >
-            {success ? "✓" : "✗"}
-          </span>
-        );
-      })}
-      {settled ? (
-        <span className="ml-1 text-[10px] text-emerald-400/90">
-          recovered · {attempts} attempts
+      {pips.map((success, i) => (
+        <span
+          key={i}
+          className={`chaos-pip inline-flex h-4 w-4 items-center justify-center rounded-sm border text-[9px] font-bold ${
+            success
+              ? "border-emerald-700/70 bg-emerald-950/60 text-emerald-400"
+              : "border-amber-700/70 bg-amber-950/60 text-amber-400"
+          }`}
+          style={{ animationDelay: `${i * PIP_STAGGER_MS}ms` }}
+          title={success ? "Step recovered" : "Injected transient fault — retried with backoff"}
+        >
+          {success ? "✓" : "✗"}
         </span>
-      ) : (
-        <span className="ml-1 animate-pulse text-[10px] text-amber-400">
-          fault {shown} — retrying…
-        </span>
-      )}
+      ))}
+      <span
+        className="chaos-pip ml-1 text-[10px] text-emerald-400/90"
+        style={{ animationDelay: `${pips.length * PIP_STAGGER_MS}ms` }}
+      >
+        recovered · {chaos.attempts} attempts
+      </span>
     </div>
   );
 }

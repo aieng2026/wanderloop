@@ -17,24 +17,40 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Chaos retry timeline: each pip fades + scales in, staggered by inline delay. */
+/* Chaos retry timeline: each pip fades + pops in, staggered by an inline
+   animation-delay so the ✗ ✗ ✓ sequence reveals one at a time and is watchable.
+   fill-mode forwards keeps them visible after. */
 @keyframes chaos-pip-in {
-  from {
+  0% {
     opacity: 0;
-    transform: scale(0.4);
+    transform: scale(0.3);
   }
-  to {
+  60% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+  100% {
     opacity: 1;
     transform: scale(1);
   }
 }
+/* Opacity-only variant for reduced-motion — keeps the staggered reveal
+   (informational), drops the scale pop (the motion-sensitive part). */
+@keyframes chaos-pip-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 .chaos-pip {
   opacity: 0;
-  animation: chaos-pip-in 260ms ease-out forwards;
+  animation: chaos-pip-in 380ms ease-out forwards;
 }
 @media (prefers-reduced-motion: reduce) {
   .chaos-pip {
-    animation: none;
-    opacity: 1;
+    animation-name: chaos-pip-fade;
+    animation-duration: 300ms;
   }
 }
