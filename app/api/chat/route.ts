@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const result = streamText({
-    model: gateway("anthropic/claude-haiku-4-5"),
+    model: gateway("zai/glm-5.2"),
     system: buildSystemPrompt({ today, locale }),
     messages: await convertToModelMessages(messages),
     tools: {

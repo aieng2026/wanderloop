@@ -1,8 +1,8 @@
 import { getWritable } from "workflow";
-import { streamText, tool, stepCountIs } from "ai";
-import { gateway } from "@ai-sdk/gateway";
+import { tool, stepCountIs } from "ai";
 import { z } from "zod";
 import type { UIMessageChunk, ModelMessage } from "ai";
+import { DurableAgent } from "@workflow/ai/agent";
 import {
   findFlightsStep,
   findRestaurantsStep,
@@ -11,17 +11,18 @@ import {
 } from "./tools";
 import { buildSystemPrompt, type LocaleHint } from "@/lib/system-prompt";
 
-async function runChatStep(
+export async function planTripWorkflow(
   messages: ModelMessage[],
-  system: string,
-  writable: WritableStream<UIMessageChunk>,
+  locale: LocaleHint,
+  today: string,
 ) {
-  "use step";
+  "use workflow";
 
-  const result = streamText({
-    model: gateway("anthropic/claude-haiku-4-5"),
-    system,
-    messages,
+  // Non-reasoning model on purpose: the durable UI renders only text and
+  // tool parts, so a reasoning model's thinking phase looks like a stall.
+  const agent = new DurableAgent({
+    model: "anthropic/claude-haiku-4-5",
+    instructions: buildSystemPrompt({ today, locale, runtime: "durable" }),
     tools: {
       find_flights: tool({
         description:
@@ -65,34 +66,11 @@ async function runChatStep(
         execute: findAttractionsStep,
       }),
     },
-    stopWhen: stepCountIs(8),
   });
 
-  const writer = writable.getWriter();
-  try {
-    for await (const chunk of result.toUIMessageStream()) {
-      await writer.write(chunk);
-    }
-  } finally {
-    writer.releaseLock();
-    try {
-      await writable.close();
-    } catch {
-      // already closed
-    }
-  }
-}
-
-export async function planTripWorkflow(
-  messages: ModelMessage[],
-  locale: LocaleHint,
-  today: string,
-) {
-  "use workflow";
-
-  await runChatStep(
+  await agent.stream({
     messages,
-    buildSystemPrompt({ today, locale, runtime: "durable" }),
-    getWritable<UIMessageChunk>(),
-  );
+    writable: getWritable<UIMessageChunk>(),
+    stopWhen: stepCountIs(8),
+  });
 }

@@ -31,12 +31,14 @@ function inferLocale(country: string | null): {
 // Paths anyone may hit without a session cookie.
 // Cron routes are excluded because they enforce their own CRON_SECRET bearer check.
 // /itinerary/<id> and /api/itinerary/<id>/pdf are share links that must stay public.
+// /architecture is the public architecture-teardown writeup.
 const PUBLIC_PREFIXES = [
   "/login",
   "/api/login",
   "/api/logout",
   "/itinerary/",
   "/api/cron/",
+  "/architecture",
 ];
 const PDF_PATTERN = /^\/api\/itinerary\/[^/]+\/pdf$/;
 

@@ -188,7 +188,7 @@ async function runPrompt(prompt: TestPrompt): Promise<PromptResult> {
   const today = new Date().toISOString().slice(0, 10);
 
   const result = streamText({
-    model: gateway("anthropic/claude-haiku-4-5"),
+    model: gateway("zai/glm-5.2"),
     system: buildSystemPrompt({ today, locale: DEFAULT_LOCALE }),
     messages: [{ role: "user", content: prompt.text }],
     tools: {
@@ -253,7 +253,7 @@ async function main() {
     `\n${COLOR.bold}Hallucination regression eval${COLOR.reset} — ${prompts.length} prompts`,
   );
   console.log(
-    `${COLOR.dim}Model: anthropic/claude-haiku-4-5 via @ai-sdk/gateway${COLOR.reset}\n`,
+    `${COLOR.dim}Model: zai/glm-5.2 via @ai-sdk/gateway${COLOR.reset}\n`,
   );
 
   // Free-tier Gateway rate-limits burst. Configurable inter-prompt delay (ms).

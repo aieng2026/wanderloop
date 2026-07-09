@@ -84,7 +84,7 @@ pnpm eval
 ## Known limitations (honest)
 
 - Tool data is **synthetic** (Lisbon, Tokyo, Paris have curated mocks; other cities get a generic fallback). Real-API integration would replace `lib/tools/*.ts` and `lib/workflows/tools.ts`.
-- Durable mode loses **per-tool-call checkpointing** vs DurableAgent — the whole agent loop is one step boundary.
+- Durable mode runs on **DurableAgent** (`@workflow/ai`) — each model call and tool call is its own checkpointed step, so an interrupted run resumes at the failed step. See `/architecture` for the before/after teardown.
 - Single hardcoded admin login (env-var creds, HMAC-signed cookie) — saved itineraries at `/itinerary/<id>` stay publicly readable by design so share links work.
 - LLM calls route through Vercel AI Gateway for unified observability and provider swaps.
 

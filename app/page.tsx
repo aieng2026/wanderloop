@@ -61,6 +61,9 @@ export default function Home() {
           >
             GitHub →
           </a>
+          <a href="/architecture" className="hover:text-neutral-400">
+            Architecture teardown →
+          </a>
         </div>
       </footer>
     </main>

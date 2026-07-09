@@ -2,7 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { WorkflowChatTransport } from "@workflow/ai";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import ToolCallCard from "@/components/tool-call-card";
 import ItineraryDisplay from "@/components/itinerary-display";
@@ -52,8 +52,12 @@ export default function DurablePlanner({
   }, [initialPrompt]);
 
   // Rehydrate the conversation from localStorage on refresh so the user's
-  // prompt + already-streamed assistant content is visible immediately.
-  // The workflow stream then resumes any remaining chunks via WorkflowChatTransport.
+  // prompt + prior turns are visible immediately.
+  // When an active run is being resumed, drop trailing assistant messages:
+  // the journal replays the run's chunks from index 0, and replaying into a
+  // rehydrated copy of the same message duplicates its text parts (provider
+  // part ids like "txt-0" restart per model call, so they can't reconcile).
+  // Replay rebuilds the assistant message identically to the live stream.
   const initialMessages = useMemo(() => {
     if (typeof window === "undefined") return undefined;
     if (initialPrompt || isStoredSessionExpired()) return undefined;
@@ -61,7 +65,12 @@ export default function DurablePlanner({
     if (!raw) return undefined;
     try {
       const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : undefined;
+      if (!Array.isArray(parsed) || parsed.length === 0) return undefined;
+      const resuming = Boolean(localStorage.getItem(RUN_ID_STORAGE_KEY));
+      if (!resuming) return parsed;
+      let end = parsed.length;
+      while (end > 0 && parsed[end - 1]?.role === "assistant") end--;
+      return end > 0 ? parsed.slice(0, end) : undefined;
     } catch {
       return undefined;
     }
@@ -134,6 +143,17 @@ export default function DurablePlanner({
       sendMessage({ text: initialPrompt });
     }
   }, [initialPrompt, hasAutoSent, initialRunId, sendMessage]);
+
+  // On refresh with a rehydrated conversation, land at the bottom right away.
+  // Browsers reset to the top (the resumed content is shorter than what was
+  // on screen pre-refresh), and waiting for the replay to trigger the sticky
+  // scroll produced a jarring top-then-bottom jump.
+  useLayoutEffect(() => {
+    if (initialMessages && initialMessages.length > 0) {
+      window.scrollTo({ top: document.documentElement.scrollHeight });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Stick to bottom while streaming, unless the user has scrolled up to read.
   const stickToBottomRef = useRef(true);
