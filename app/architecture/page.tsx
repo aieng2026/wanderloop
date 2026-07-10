@@ -390,28 +390,33 @@ export default function ArchitecturePage() {
           5. Where I&apos;d take it next
         </h2>
         <p>
-          The repo ships a lightweight hallucination-regression eval (10 prompts
-          asserting every place the model names traces back to a tool output —
-          it&apos;s in <code className="text-neutral-200">evals/</code>). In the
-          first draft this section listed three next steps; since then I shipped
-          all three — the eval now gates CI, both paths emit OTel spans plus a
-          per-run cost line, and the Gateway runs an explicit fallback chain.
-          They were afternoon-sized on this platform, which is, in the end, the
-          whole argument. See the operational section below.
+          These are the architecture and product moves; the operational
+          hardening lives in the next section.
         </p>
         <p>
-          One cleanup the DurableAgent refactor didn&apos;t finish: the tools
-          are still defined in two places —{" "}
+          The most honest next step is the data itself. The four tools return
+          synthetic flights, restaurants, weather, and attractions today — which
+          is what kept the demo deterministic. Wiring them to real providers is
+          the obvious evolution, and the point is that it&apos;s a wiring change,
+          not a re-architecture: each tool is already a checkpointed step, so a
+          flaky provider retries in isolation; identical{" "}
+          <span className="whitespace-nowrap">(city, dates)</span> lookups become
+          cache hits through the same caching the itinerary pages already use;
+          and per-provider keys and rate limits sit behind the AI Gateway and
+          Firewall patterns the app already runs. The primitives that made the
+          demo cheap are the ones that make the real version cheap.
+        </p>
+        <p>
+          Closer in, one cleanup the DurableAgent refactor didn&apos;t finish:
+          the tools are still defined in two places —{" "}
           <code className="text-neutral-200">lib/tools/*</code> for the fast
           path and the <code className="text-neutral-200">&quot;use step&quot;</code>{" "}
           versions in <code className="text-neutral-200">lib/workflows/tools.ts</code>{" "}
           for the durable one. DurableAgent simplified the agent{" "}
           <em>loop</em>, not that duplication. The next move is a single tool
-          module both paths import — the durable path wrapping each with the
-          step directive — so a new tool or a schema change lands in exactly one
-          place. Worth naming because it&apos;s the honest boundary of what the
-          abstraction bought: it collapsed the orchestration, not the tool
-          surface.
+          module both paths import, so a new tool or a schema change lands in
+          exactly one place — the honest boundary of what the abstraction bought:
+          it collapsed the orchestration, not the tool surface.
         </p>
 
         {/* ---- Operational excellence ---- */}
@@ -419,12 +424,24 @@ export default function ArchitecturePage() {
           6. Operational excellence — the parts that don&apos;t demo but do page you
         </h2>
         <p>
-          A Well-Architected writeup shouldn&apos;t stop at the happy path. Here
-          is how the same platform primitives cover the operational pillars —
-          each one is config or a few lines, not a service I stand up and run.
-          The full breakdown, with RPO/RTO and what&apos;s still on the backlog,
-          is in{" "}
-          <code className="text-neutral-200">OPERATIONAL_ROADMAP.md</code>.
+          A Well-Architected writeup shouldn&apos;t stop at the happy path. For
+          the second iteration of the app I invested specifically in
+          operational excellence — the work that moves it from &ldquo;a demo that
+          runs&rdquo; toward something you could actually put in production:
+          failover, fault injection, telemetry, cost visibility, a health check,
+          rate limiting, and caching. What follows is how the same platform
+          primitives cover those pillars — each one config or a few lines, not a
+          service I stand up and run. The full breakdown, with RPO/RTO and
+          what&apos;s still on the backlog, is in{" "}
+          <a
+            href="https://github.com/aieng2026/wanderloop/blob/main/OPERATIONAL_ROADMAP.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-purple-300 hover:text-purple-200"
+          >
+            <code>OPERATIONAL_ROADMAP.md</code>
+          </a>
+          .
         </p>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse text-sm">
@@ -474,7 +491,15 @@ export default function ArchitecturePage() {
           isn&apos;t that Wanderloop needs them — it&apos;s that each is platform
           config I can turn on, not an operational program I have to build. The
           full pillar-by-pillar breakdown, with RPO/RTO, lives in{" "}
-          <code className="text-neutral-200">OPERATIONAL_ROADMAP.md</code>.
+          <a
+            href="https://github.com/aieng2026/wanderloop/blob/main/OPERATIONAL_ROADMAP.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-purple-300 hover:text-purple-200"
+          >
+            <code>OPERATIONAL_ROADMAP.md</code>
+          </a>
+          .
         </p>
 
         <footer className="border-t border-neutral-800 pt-6 text-sm text-neutral-500">
