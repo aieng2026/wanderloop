@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import ArchitectureDiagram from "@/components/architecture-diagram";
 
 export const metadata: Metadata = {
-  title: "Wanderloop on raw AWS vs. on Vercel — an architecture teardown",
+  title: "Raw cloud primitives vs. Vercel — an architecture comparison",
   description:
-    "A before/after teardown of the same AI travel-planning app: what you'd stand up and operate yourself on raw cloud primitives vs. what Vercel handles for you.",
+    "A side-by-side comparison of what an engineering team would build and operate on raw cloud primitives versus what the Vercel platform provides, using Wanderloop, a production-shaped AI app, as the reference.",
 };
 
 const MAPPING_ROWS: {
@@ -144,11 +144,12 @@ export default function ArchitecturePage() {
           ← Wanderloop
         </a>
         <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-          What Vercel is actually doing for Wanderloop
+          Raw cloud primitives vs. Vercel: an architecture comparison
         </h1>
         <p className="mt-2 text-lg text-neutral-400">
-          A before/after teardown: the same AI travel-planning app on raw cloud
-          primitives vs. on the platform.
+          What an engineering team would stand up and operate on raw cloud
+          primitives, compared with what the Vercel platform provides — using
+          Wanderloop, a production-shaped AI app, as the working reference.
         </p>
       </header>
 
@@ -187,12 +188,12 @@ export default function ArchitecturePage() {
         <p>
           Each row is one capability: on the left, the stack I&apos;d stand up
           and operate on AWS to match Wanderloop feature-for-feature; on the
-          right, the single Vercel primitive it collapses into. The left side is
-          not a strawman — it&apos;s the boring standard build: Fargate for SSR
-          because streaming responses on Lambda have size/duration constraints
-          you engineer around, Step Functions for durability, a LiteLLM proxy so
-          provider keys and failover logic aren&apos;t scattered through app
-          code. The right side is what actually exists in this repo. Read across
+          right, the single Vercel primitive it collapses into. The left side
+          isn&apos;t exaggerated to make a point — it&apos;s the complex build
+          this class of application genuinely requires: Fargate for SSR because streaming responses on
+          Lambda have size/duration constraints you engineer around, Step
+          Functions for durability, a LiteLLM proxy so provider keys and
+          failover logic aren&apos;t scattered through application code. The right side is what actually exists in this repo. Read across
           a row to see what maps to what; scan the columns to see how much the
           platform absorbs.
         </p>
@@ -206,7 +207,8 @@ export default function ArchitecturePage() {
         <p>
           Every row is a real Wanderloop feature you can click today. The
           &ldquo;what you&apos;d own&rdquo; column is the part that doesn&apos;t
-          show up in architecture diagrams but does show up in your calendar.
+          appear in architecture diagrams but does land on your team&apos;s
+          roadmap and on-call rotation.
         </p>
 
         <div className="overflow-x-auto">
