@@ -12,7 +12,25 @@ import {
 import { buildSystemPrompt, type LocaleHint } from "@/lib/system-prompt";
 import { PRIMARY_MODEL, gatewayResilience } from "@/lib/models";
 import { logRunCost } from "@/lib/cost";
+import { recordRun } from "@/lib/telemetry";
 import type { ChaosContext } from "./chaos";
+
+// Telemetry write must be a step: @vercel/blob uses Node built-ins that don't
+// exist in the workflow sandbox (they throw "require is not defined"). As a
+// "use step" it runs in the full Node runtime instead.
+async function recordDurableRun(input: {
+  model: string;
+  usage: { inputTokens?: number; outputTokens?: number };
+  faults: number;
+}) {
+  "use step";
+  await recordRun({
+    path: "durable",
+    model: input.model,
+    usage: input.usage,
+    faults: input.faults,
+  });
+}
 
 export async function planTripWorkflow(
   messages: ModelMessage[],
@@ -88,6 +106,17 @@ export async function planTripWorkflow(
     experimental_context: chaosCtx,
     // Per-step OTel spans (latency, tokens) — see instrumentation.ts.
     experimental_telemetry: { isEnabled: true, functionId: "chat-durable" },
-    onFinish: ({ totalUsage }) => logRunCost("durable", PRIMARY_MODEL, totalUsage),
+    onFinish: async ({ steps, totalUsage }) => {
+      logRunCost("durable", PRIMARY_MODEL, totalUsage);
+      // Sum chaos faults recovered across the tool steps for the dashboard.
+      let faults = 0;
+      for (const step of steps ?? []) {
+        for (const tr of step.toolResults ?? []) {
+          const out = tr.output as { _chaos?: { faults?: number } } | undefined;
+          faults += out?._chaos?.faults ?? 0;
+        }
+      }
+      await recordDurableRun({ model: PRIMARY_MODEL, usage: totalUsage, faults });
+    },
   });
 }

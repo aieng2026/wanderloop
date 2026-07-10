@@ -7,6 +7,7 @@ import { findAttractions } from "@/lib/tools/find-attractions";
 import { buildSystemPrompt, type LocaleHint } from "@/lib/system-prompt";
 import { PRIMARY_MODEL, gatewayResilience } from "@/lib/models";
 import { logRunCost } from "@/lib/cost";
+import { recordRun } from "@/lib/telemetry";
 import { rateLimitGuard } from "@/lib/rate-limit";
 
 export const maxDuration = 60;
@@ -39,7 +40,10 @@ export async function POST(req: Request) {
     // Emit OTel spans per model + tool call (latency, tokens) — see instrumentation.ts.
     experimental_telemetry: { isEnabled: true, functionId: "chat-fast" },
     stopWhen: stepCountIs(8),
-    onFinish: ({ usage }) => logRunCost("fast", PRIMARY_MODEL, usage),
+    onFinish: async ({ usage }) => {
+      logRunCost("fast", PRIMARY_MODEL, usage);
+      await recordRun({ path: "fast", model: PRIMARY_MODEL, usage });
+    },
   });
 
   return result.toUIMessageStreamResponse();

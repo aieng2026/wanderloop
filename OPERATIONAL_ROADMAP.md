@@ -16,8 +16,9 @@ concern it removes from my plate.
 | **Eval-in-CI gate** | `.github/workflows/eval.yml` runs the hallucination-regression eval on PRs touching the agent's behavior surface. A prompt or model change can't merge if it regresses grounding. |
 | **Per-run structured telemetry** | `lib/cost.ts` emits a `run_cost` log line per trip; OTel spans (`instrumentation.ts`) capture per-model and per-tool latency. |
 | **Health endpoint** | `GET /api/health` (public) reports serving region + deployment id + Blob status — probeable by an uptime monitor; shows failover and ties an incident to a release. |
+| **AI cost dashboard** | `/status` (auth-gated) — per-trip LLM cost, token mix, model routing, and chaos faults recovered, from a rolling window in Blob. The AI economics Vercel Observability doesn't have; complementary, not a re-implementation. |
 
-**Next:** ship a `/status` ops page (p50/p95 latency, error rate, cost/run) reading from telemetry; wire the eval into a required Vercel deployment **Check** (blocks promotion, not just a GitHub status); add a runbook (rollback, on-call, incident triage).
+**Next:** move the `/status` rolling window off Blob onto Upstash Redis / Neon (the Blob read-modify-write races under real concurrency); wire the eval into a required Vercel deployment **Check** (blocks promotion, not just a GitHub status); add a runbook (rollback, on-call, incident triage).
 
 **Log drains (capability):** the structured `run_cost` / OTel signal is drain-ready — a Vercel **Log Drain** (`/v1/integrations/log-drains`) ships it to Datadog / Axiom / a SIEM. No code change; it's a destination + config.
 
@@ -85,6 +86,7 @@ vercel firewall rules add "Rate limit AI routes" \
 | OTel tracing + per-run cost | Ops / Cost | ✅ shipped |
 | Eval-in-CI gate | Ops Excellence | ✅ shipped |
 | `/api/health` endpoint | Ops / Monitoring | ✅ shipped |
+| `/status` AI cost dashboard | Ops Excellence | ✅ shipped |
 | Rate limiting (edge WAF rule + in-route guard) | Security | ✅ shipped + live |
 | ISR-cached itinerary reads | Performance / Cost | ✅ shipped |
 | Multi-region `functionFailoverRegions` | Reliability | 🏢 Enterprise plan |
@@ -92,6 +94,6 @@ vercel firewall rules add "Rate limit AI routes" \
 | Rolling releases + skew protection | Ops Excellence | 🏢 capability (config) |
 | Log drain → Datadog/SIEM | Monitoring | ⏳ config + destination |
 | BotID on AI + sandbox routes | Security | ⏳ next |
-| `/status` ops dashboard | Ops Excellence | ⏳ next |
+| `/status` window on Redis/Neon (off Blob) | Ops Excellence | ⏳ next |
 
 The shipped set is deliberately small and demonstrable; the backlog is prioritized by risk, not novelty. That prioritization — not the length of the list — is the operational-maturity signal.

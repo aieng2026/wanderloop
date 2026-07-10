@@ -415,6 +415,7 @@ export default function ArchitecturePage() {
                 ["Reliability", "Chaos fault injection into durable steps; the runtime's step retries recover with no user-visible failure", "Workflow DevKit"],
                 ["Operations", "Per-model + per-tool OTel spans; a structured per-run cost line (~$0.005/trip)", "@vercel/otel + AI SDK telemetry"],
                 ["Operations", "Public /api/health endpoint reporting serving region + deployment id — probeable by an uptime monitor", "Vercel Functions"],
+                ["Ops Excellence", "/status dashboard — per-trip LLM cost, token mix, model routing, chaos faults recovered: the AI economics Observability can't see", "Blob rolling window"],
                 ["Ops Excellence", "Eval-in-CI gate — a prompt/model change that regresses grounding can't merge", "GitHub Actions"],
                 ["Security", "Live edge WAF rule (30 req/60s per IP) on the LLM routes, plus an in-route fail-open guard (a limiter must never take down what it protects)", "Vercel Firewall"],
                 ["Performance / Cost", "ISR-cached itinerary share pages — a per-request Blob read becomes an edge cache hit", "ISR + Vercel Blob"],
