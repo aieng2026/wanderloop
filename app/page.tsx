@@ -7,12 +7,20 @@ export default function Home() {
         <span className="text-sm font-medium tracking-wider text-neutral-500 uppercase">
           Wanderloop
         </span>
-        <a
-          href="/durable-plan"
-          className="rounded-full border border-purple-800 px-3 py-1 text-xs text-purple-300 hover:border-purple-600 hover:text-purple-200"
-        >
-          Try durable mode →
-        </a>
+        <div className="flex items-center gap-4 text-xs">
+          <a
+            href="/architecture"
+            className="text-neutral-400 hover:text-neutral-200"
+          >
+            Architecture
+          </a>
+          <a
+            href="/durable-plan"
+            className="rounded-full border border-purple-800 px-3 py-1 text-purple-300 hover:border-purple-600 hover:text-purple-200"
+          >
+            Try durable mode →
+          </a>
+        </div>
       </header>
 
       <section className="mb-16 flex w-full max-w-3xl flex-col self-center text-center">
@@ -62,7 +70,7 @@ export default function Home() {
             GitHub →
           </a>
           <a href="/architecture" className="hover:text-neutral-400">
-            Architecture teardown →
+            Architecture comparison →
           </a>
         </div>
       </footer>
