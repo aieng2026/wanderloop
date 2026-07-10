@@ -160,7 +160,7 @@ export default function ArchitecturePage() {
           AI app is ~26 services you provision, patch, and get paged about on raw
           AWS, or an app plus two config files on Vercel. §1–4 are the core
           before/after and the DurableAgent refactor; §5–6 go deeper on the
-          operational side because the follow-up conversation does too.
+          operational side.
         </div>
 
         {/* ---- Intro ---- */}
@@ -178,7 +178,7 @@ export default function ArchitecturePage() {
           every production AI app ends up needing roughly this set. So the
           fair question is: what would it take to run this exact system
           yourself on raw cloud primitives, and what does the platform version
-          actually save? This post is my honest accounting.
+          actually save?
         </p>
 
         {/* ---- Section 1: the diagram ---- */}
@@ -362,7 +362,7 @@ export default function ArchitecturePage() {
           interesting part. The build-time workflow manifest tells the real
           story: before, it registered one fat step. After, it registers the
           model call (<code className="text-neutral-200">doStreamStep</code>)
-          and each of the four tools as <em>individual</em> steps. A failure at
+          and each of the four tools as individual steps. A failure at
           model call five now resumes at model call five, with calls one
           through four replayed from the journal — no re-execution, no repeat
           token spend. The tool implementations and the client transport
@@ -375,7 +375,7 @@ export default function ArchitecturePage() {
           stateless request/response chat doesn&apos;t need checkpointing, and
           the abstraction would add latency and machinery for no benefit.
           DurableAgent earns its place exactly where a run is long-lived enough
-          to be worth resuming — knowing where <em>not</em> to use the shiny
+          to be worth resuming — knowing where <em>not</em> to use the
           abstraction is half the architecture. Model choice got the same
           scrutiny: both paths run Haiku 4.5 today. I trialed a reasoning model
           (GLM-5.2) on the interactive path, but its thinking phase reads as a
