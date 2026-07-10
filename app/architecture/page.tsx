@@ -153,6 +153,15 @@ export default function ArchitecturePage() {
       </header>
 
       <article className="space-y-6 text-[15px] leading-relaxed text-neutral-300">
+        {/* ---- TL;DR ---- */}
+        <div className="rounded-xl border border-purple-900/50 bg-purple-950/20 px-5 py-4 text-[15px] text-neutral-200">
+          <span className="font-semibold text-purple-300">TL;DR —</span> The same
+          AI app is ~26 services you provision, patch, and get paged about on raw
+          AWS, or an app plus two config files on Vercel. §1–4 are the core
+          before/after and the DurableAgent refactor; §5–6 go deeper on the
+          operational side because the follow-up conversation does too.
+        </div>
+
         {/* ---- Intro ---- */}
         <p>
           Wanderloop is an AI travel concierge: you type a trip in plain
@@ -261,6 +270,18 @@ export default function ArchitecturePage() {
           AWS all three are systems I&apos;d design, operate, and debug at 2am.
           Deploys are atomic with one-click rollback, which is the reliability
           feature people forget until they need it.
+        </p>
+
+        <h3 className="pt-1 text-lg font-semibold text-neutral-100">
+          Performance
+        </h3>
+        <p>
+          The product win is perceived latency: streaming puts the first token
+          on screen in about a second, versus a 30-second spinner while a full
+          itinerary generates — and the tool calls render live as they run, so
+          the user watches the plan assemble. That is default behavior of a
+          streaming Function here; on Lambda you engineer around response-size
+          and duration limits to get the same effect.
         </p>
 
         <h3 className="pt-1 text-lg font-semibold text-neutral-100">Cost</h3>

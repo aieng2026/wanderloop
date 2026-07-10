@@ -183,7 +183,7 @@ export default function ArchitectureDiagram() {
         />
       </div>
       <figcaption className="mt-3 text-center text-xs text-neutral-500">
-        Same product, same features, same traffic. Left: ~26 services with your
+        Same product, same features, same traffic. Left: 26 services with your
         name on the pager. Right: an app, two config files, and a git remote.
       </figcaption>
     </figure>
