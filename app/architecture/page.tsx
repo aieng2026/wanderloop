@@ -185,13 +185,16 @@ export default function ArchitecturePage() {
           1. The same system, twice
         </h2>
         <p>
-          Left is what I would stand up on AWS to match Wanderloop
-          feature-for-feature — not a strawman, the boring standard build:
-          Fargate for SSR because streaming responses on Lambda have
-          size/duration constraints you end up engineering around, Step
-          Functions for durability, a LiteLLM proxy because you don&apos;t
-          want provider keys and failover logic scattered through app code.
-          Right is what actually exists in this repo.
+          Each row is one capability: on the left, the stack I&apos;d stand up
+          and operate on AWS to match Wanderloop feature-for-feature; on the
+          right, the single Vercel primitive it collapses into. The left side is
+          not a strawman — it&apos;s the boring standard build: Fargate for SSR
+          because streaming responses on Lambda have size/duration constraints
+          you engineer around, Step Functions for durability, a LiteLLM proxy so
+          provider keys and failover logic aren&apos;t scattered through app
+          code. The right side is what actually exists in this repo. Read across
+          a row to see what maps to what; scan the columns to see how much the
+          platform absorbs.
         </p>
 
         <ArchitectureDiagram />

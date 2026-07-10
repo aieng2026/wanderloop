@@ -1,165 +1,152 @@
-// Before/after architecture diagram for /architecture.
-// Left: every service you'd stand up and operate yourself on AWS.
-// Right: the same system as Vercel platform config.
-// The at-a-glance read is box count + border weight: heavy borders = you own it.
+// Before/after architecture diagram — aligned capability rows.
+// Each row is one capability: the stack of AWS services you'd operate on the
+// left, the single Vercel primitive it collapses into on the right. The
+// many→one collapse, repeated per row, is both the mapping (what equals what)
+// and the contrast (how much the platform absorbs). Heavy-bordered = you
+// operate it; light fill = platform behavior you configure.
 
-type Box = { name: string; note?: string };
-type Lane = { title: string; boxes: Box[] };
+type AwsBox = { name: string; note?: string };
+type Row = {
+  capability: string;
+  aws: AwsBox[];
+  vercel: string; // "" when the platform absorbs it with no box to configure
+  vercelNote?: string;
+};
 
-const AWS_LANES: Lane[] = [
+const ROWS: Row[] = [
   {
-    title: "Edge & delivery",
-    boxes: [
-      { name: "Route 53", note: "DNS" },
-      { name: "CloudFront", note: "CDN + TLS" },
-      { name: "ACM", note: "cert renewal" },
-      { name: "Lambda@Edge", note: "geo headers" },
-    ],
-  },
-  {
-    title: "Compute & CI/CD",
-    boxes: [
+    capability: "Streaming compute",
+    aws: [
       { name: "ALB", note: "load balancer" },
-      { name: "ECS Fargate", note: "Next.js SSR, streaming" },
+      { name: "ECS Fargate", note: "SSR + streaming" },
       { name: "Auto Scaling", note: "policies you tune" },
-      { name: "ECR", note: "image registry" },
-      { name: "CodePipeline", note: "build + blue/green" },
     ],
+    vercel: "Functions",
+    vercelNote: "streaming, per-route maxDuration",
   },
   {
-    title: "AI plumbing",
-    boxes: [
-      { name: "LiteLLM on ECS", note: "model routing proxy" },
-      { name: "Secrets Manager", note: "provider API keys" },
+    capability: "Model access",
+    aws: [
+      { name: "LiteLLM on ECS", note: "routing proxy" },
+      { name: "Secrets Manager", note: "provider keys" },
       { name: "Usage metering", note: "custom" },
       { name: "Failover logic", note: "custom" },
     ],
+    vercel: "AI Gateway",
+    vercelNote: "one key, any model, fallbacks",
   },
   {
-    title: "Durable agent runs",
-    boxes: [
+    capability: "Durable agent runs",
+    aws: [
       { name: "Step Functions", note: "state machine" },
-      { name: "SQS", note: "queues + DLQ" },
+      { name: "SQS + DLQ" },
       { name: "DynamoDB", note: "checkpoint journal" },
-      { name: "Stream-resume svc", note: "custom — resumable UI streams" },
+      { name: "Stream-resume svc", note: "custom" },
     ],
+    vercel: "Workflow DevKit",
+    vercelNote: "checkpoints + resumable streams",
   },
   {
-    title: "Storage & scheduled jobs",
-    boxes: [
-      { name: "S3", note: "itineraries, digests" },
-      { name: "EventBridge", note: "cron schedule" },
-      { name: "Lambda", note: "daily-deals job" },
-    ],
+    capability: "Storage",
+    aws: [{ name: "S3" }, { name: "IAM policies", note: "+ presigned URLs" }],
+    vercel: "Blob",
+    vercelNote: "put() / get(), private",
   },
   {
-    title: "Untrusted code exec",
-    boxes: [
-      { name: "Firecracker on EC2", note: "microVM pool you patch" },
-    ],
+    capability: "Scheduling",
+    aws: [{ name: "EventBridge" }, { name: "Lambda", note: "daily-deals" }],
+    vercel: "Cron",
+    vercelNote: "4 lines in vercel.json",
   },
   {
-    title: "Cross-cutting (always on-call)",
-    boxes: [
-      { name: "VPC + subnets + NAT", note: "~$35/mo just to exist" },
-      { name: "IAM roles & policies", note: "per service pair" },
-      { name: "CloudWatch", note: "logs, alarms, dashboards" },
-      { name: "RUM / X-Ray", note: "web vitals, tracing" },
-      { name: "Patching & upgrades", note: "AMIs, runtimes, proxies" },
+    capability: "Untrusted code exec",
+    aws: [{ name: "Firecracker on EC2", note: "microVM pool you patch" }],
+    vercel: "Sandbox",
+    vercelNote: "microVM per request",
+  },
+  {
+    capability: "Edge · CDN · auth · geo",
+    aws: [
+      { name: "Route 53" },
+      { name: "CloudFront", note: "CDN + TLS" },
+      { name: "Lambda@Edge", note: "geo + auth" },
     ],
+    vercel: "Edge + proxy.ts",
+    vercelNote: "CDN, TLS, geo headers, one file",
+  },
+  {
+    capability: "Observability",
+    aws: [{ name: "CloudWatch" }, { name: "RUM / X-Ray" }],
+    vercel: "Analytics + Speed Insights",
+    vercelNote: "two lines in layout.tsx",
+  },
+  {
+    capability: "CI/CD + deploy",
+    aws: [{ name: "CodePipeline", note: "build + blue/green" }, { name: "ECR" }],
+    vercel: "git push",
+    vercelNote: "preview per PR, instant rollback",
+  },
+  {
+    capability: "Cross-cutting (always on-call)",
+    aws: [
+      { name: "VPC + NAT", note: "~$35/mo to exist" },
+      { name: "IAM roles", note: "per service pair" },
+      { name: "Patching", note: "AMIs, runtimes" },
+    ],
+    vercel: "",
+    vercelNote: "absorbed by the platform",
   },
 ];
 
-const VERCEL_LANES: Lane[] = [
-  {
-    title: "You write",
-    boxes: [
-      { name: "Next.js app", note: "the actual product" },
-      { name: "proxy.ts", note: "auth + geo, one file" },
-      { name: "vercel.json", note: "cron: 4 lines" },
-    ],
-  },
-  {
-    title: "Platform runs it",
-    boxes: [
-      { name: "Functions", note: "streaming, per-route maxDuration" },
-      { name: "AI Gateway", note: "one key, any model" },
-      { name: "Workflow DevKit", note: "checkpoints + resumable streams" },
-      { name: "Blob", note: "storage" },
-      { name: "Cron", note: "scheduler" },
-      { name: "Sandbox", note: "microVMs on demand" },
-      { name: "Edge network", note: "CDN, TLS, geo headers" },
-      { name: "Analytics + Speed Insights", note: "two lines in layout.tsx" },
-    ],
-  },
-  {
-    title: "Deploy pipeline",
-    boxes: [
-      { name: "git push", note: "preview URL per PR, instant rollback" },
-    ],
-  },
-];
+const AWS_COUNT = ROWS.reduce((n, r) => n + r.aws.length, 0);
+const VERCEL_COUNT = ROWS.filter((r) => r.vercel !== "").length;
 
-function Panel({
-  heading,
-  sub,
-  lanes,
-  owned,
-}: {
-  heading: string;
-  sub: string;
-  lanes: Lane[];
-  owned: boolean;
-}) {
-  const boxCount = lanes.reduce((n, l) => n + l.boxes.length, 0);
+function AwsChip({ box }: { box: AwsBox }) {
   return (
-    <div
-      className={`flex-1 rounded-xl border p-4 sm:p-5 ${
-        owned ? "border-amber-900/60 bg-neutral-950" : "border-purple-900/60 bg-neutral-950"
-      }`}
-    >
-      <div className="mb-1 flex items-baseline justify-between gap-2">
-        <h3 className="text-sm font-semibold tracking-wide uppercase">
-          {heading}
-        </h3>
-        <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-            owned
-              ? "bg-amber-950 text-amber-400"
-              : "bg-purple-950 text-purple-300"
-          }`}
-        >
-          {boxCount} {owned ? "services you operate" : "boxes total"}
-        </span>
+    <div className="rounded-md border-2 border-neutral-600 bg-neutral-900 px-2 py-1 text-xs leading-tight text-neutral-200">
+      <div className="font-medium">{box.name}</div>
+      {box.note && (
+        <div className="mt-0.5 text-[10px] text-neutral-500">{box.note}</div>
+      )}
+    </div>
+  );
+}
+
+function DiagramRow({ row }: { row: Row }) {
+  const absorbed = row.vercel === "";
+  return (
+    <div className="flex flex-col gap-2 border-b border-neutral-800/60 py-3 last:border-0 md:flex-row md:items-center">
+      {/* capability */}
+      <div className="shrink-0 text-[11px] font-medium tracking-wider text-neutral-400 uppercase md:w-36">
+        {row.capability}
       </div>
-      <p className="mb-4 text-xs text-neutral-500">{sub}</p>
-      <div className="flex flex-col gap-3">
-        {lanes.map((lane) => (
-          <div key={lane.title}>
-            <div className="mb-1.5 text-[11px] font-medium tracking-wider text-neutral-500 uppercase">
-              {lane.title}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {lane.boxes.map((box) => (
-                <div
-                  key={box.name}
-                  className={`rounded-md px-2.5 py-1.5 text-xs leading-tight ${
-                    owned
-                      ? "border-2 border-neutral-600 bg-neutral-900 text-neutral-200"
-                      : "border border-purple-900/50 bg-purple-950/30 text-neutral-300"
-                  }`}
-                >
-                  <div className="font-medium">{box.name}</div>
-                  {box.note && (
-                    <div className="mt-0.5 text-[10px] text-neutral-500">
-                      {box.note}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+
+      {/* AWS stack */}
+      <div className="flex flex-1 flex-wrap gap-1.5">
+        {row.aws.map((box) => (
+          <AwsChip key={box.name} box={box} />
         ))}
+      </div>
+
+      {/* arrow */}
+      <div className="shrink-0 text-center text-neutral-600 md:w-6">→</div>
+
+      {/* Vercel primitive */}
+      <div className="shrink-0 md:w-56">
+        {absorbed ? (
+          <div className="rounded-md border border-dashed border-neutral-700 px-3 py-1.5 text-xs text-neutral-500 italic">
+            {row.vercelNote}
+          </div>
+        ) : (
+          <div className="rounded-md border border-purple-800/60 bg-purple-950/40 px-3 py-1.5 text-xs leading-tight">
+            <div className="font-semibold text-purple-200">{row.vercel}</div>
+            {row.vercelNote && (
+              <div className="mt-0.5 text-[10px] text-purple-400/80">
+                {row.vercelNote}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -167,24 +154,35 @@ function Panel({
 
 export default function ArchitectureDiagram() {
   return (
-    <figure className="my-8">
-      <div className="flex flex-col gap-4 lg:flex-row">
-        <Panel
-          heading="Before — run it yourself on AWS"
-          sub="Every heavy-bordered box is a service you provision, secure, monitor, patch, and page yourself about."
-          lanes={AWS_LANES}
-          owned
-        />
-        <Panel
-          heading="After — the same system on Vercel"
-          sub="The app code is the same. Everything below the first lane is platform behavior you configure, not services you run."
-          lanes={VERCEL_LANES}
-          owned={false}
-        />
+    <figure className="my-8 rounded-xl border border-neutral-800 bg-neutral-950 p-4 sm:p-5">
+      {/* column headers */}
+      <div className="mb-2 hidden gap-2 border-b border-neutral-700 pb-2 text-[10px] font-medium tracking-wider text-neutral-500 uppercase md:flex md:items-center">
+        <div className="w-36 shrink-0">Capability</div>
+        <div className="flex-1">
+          <span className="text-amber-500/80">Self-managed AWS</span> — you
+          operate every box
+        </div>
+        <div className="w-6 shrink-0" />
+        <div className="w-56 shrink-0">
+          <span className="text-purple-300">On Vercel</span> — you configure it
+        </div>
       </div>
-      <figcaption className="mt-3 text-center text-xs text-neutral-500">
-        Same product, same features, same traffic. Left: 26 services with your
-        name on the pager. Right: an app, two config files, and a git remote.
+
+      <div className="overflow-x-auto">
+        <div className="min-w-[560px]">
+          {ROWS.map((row) => (
+            <DiagramRow key={row.capability} row={row} />
+          ))}
+        </div>
+      </div>
+
+      <figcaption className="mt-4 border-t border-neutral-800 pt-3 text-center text-xs text-neutral-500">
+        Every row collapses a stack you operate into one thing you configure —{" "}
+        <span className="text-neutral-300">
+          {AWS_COUNT} services with your name on the pager
+        </span>{" "}
+        become <span className="text-purple-300">{VERCEL_COUNT} config points</span>,
+        and the cross-cutting lane is absorbed entirely.
       </figcaption>
     </figure>
   );
