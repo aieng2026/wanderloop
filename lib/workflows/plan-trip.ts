@@ -15,6 +15,44 @@ import { logRunCost } from "@/lib/cost";
 import { recordRun } from "@/lib/telemetry";
 import type { ChaosContext } from "./chaos";
 
+// Sum the chaos "faults recovered" across a durable run.
+//
+// DurableAgent leaves each StepResult.toolResults empty ([]) — it executes
+// tools itself outside the model step — so the tool outputs (which carry
+// `_chaos`) only survive into onFinish inside the final `messages`
+// conversation, not in `steps[].toolResults`. Reading step.toolResults always
+// summed 0, which is why /status showed 0 faults even with chaos armed.
+//
+// The output wrapping varies by SDK code path (output vs output.value, object
+// vs JSON string), so scan defensively: walk the structure and, for any
+// `_chaos.faults` we encounter, add it. Each tool result appears once in the
+// conversation, so there's no double-counting. Strings that look like a
+// serialized tool result are parsed and walked too.
+function sumRecoveredFaults(root: unknown): number {
+  let total = 0;
+  const seen = new Set<unknown>();
+  const walk = (v: unknown) => {
+    if (typeof v === "string") {
+      if (v.includes("_chaos")) {
+        try {
+          walk(JSON.parse(v));
+        } catch {
+          /* not JSON — ignore */
+        }
+      }
+      return;
+    }
+    if (!v || typeof v !== "object" || seen.has(v)) return;
+    seen.add(v);
+    const obj = v as Record<string, unknown>;
+    const chaos = obj._chaos as { faults?: number } | undefined;
+    if (chaos && typeof chaos.faults === "number") total += chaos.faults;
+    for (const key of Object.keys(obj)) walk(obj[key]);
+  };
+  walk(root);
+  return total;
+}
+
 // Telemetry write must be a step: @vercel/blob uses Node built-ins that don't
 // exist in the workflow sandbox (they throw "require is not defined"). As a
 // "use step" it runs in the full Node runtime instead.
@@ -106,16 +144,14 @@ export async function planTripWorkflow(
     experimental_context: chaosCtx,
     // Per-step OTel spans (latency, tokens) — see instrumentation.ts.
     experimental_telemetry: { isEnabled: true, functionId: "chat-durable" },
-    onFinish: async ({ steps, totalUsage }) => {
+    onFinish: async (event) => {
+      const { totalUsage } = event;
       logRunCost("durable", PRIMARY_MODEL, totalUsage);
-      // Sum chaos faults recovered across the tool steps for the dashboard.
-      let faults = 0;
-      for (const step of steps ?? []) {
-        for (const tr of step.toolResults ?? []) {
-          const out = tr.output as { _chaos?: { faults?: number } } | undefined;
-          faults += out?._chaos?.faults ?? 0;
-        }
-      }
+      // Sum chaos faults recovered for the /status dashboard. DurableAgent
+      // exposes the tool outputs (with `_chaos`) in the onFinish `messages`
+      // conversation, not in steps[].toolResults (which are always empty here).
+      const messages = (event as { messages?: unknown }).messages;
+      const faults = sumRecoveredFaults(messages ?? (event as { steps?: unknown }).steps);
       await recordDurableRun({ model: PRIMARY_MODEL, usage: totalUsage, faults });
     },
   });
